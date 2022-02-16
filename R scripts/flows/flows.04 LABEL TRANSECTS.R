@@ -42,8 +42,8 @@ ggsave("./Figures/flows/check.04.1.png", bg = "white")
 labelled <- st_intersection(st_make_valid(Edges), st_make_valid(grid)) %>% 
   mutate(split_length = as.numeric(st_length(.))) %>% 
   select(x, y, slab_layer, Shore, split_length, Bathymetry) %>% 
-  filter(split_length != 0) %>% 
-  characterise_flows(domains, precision = 1000) %>%                            # In which direction? (in or out of box and with which neighbour)
+  filter(split_length > 0.001) %>%                                              # Drop 6 tiny transects which are breaking the algorithm
+  characterise_flows(domains, precision = 10000) %>%                            # In which direction? (in or out of box and with which neighbour)
   filter(Neighbour != "Offshore")                                               # Offshore as a neighbour is a rare artefact from resolution.
 
 ggplot(labelled) +                                                              # Check segments are labelled
