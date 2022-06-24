@@ -1,6 +1,6 @@
 
 ## Set repeated commands specific to the project region
-## This version is parameterised for the Barents sea
+implementation <- "South_Africa"
 
 library(sf)
 
@@ -43,7 +43,7 @@ Region_mask <- matrix(c(28, -38.5,
                         28, -32,
                         28, -38.5),
                        ncol = 2, byrow = T) %>% 
-  shape(label = "South Africa")
+  shape(label = implementation)
 
 ggplot(Region_mask)+geom_sf()
 
@@ -76,7 +76,7 @@ river_expansion <- matrix(c(13, 73,
   list() %>% 
   st_polygon() %>% 
   st_sfc() %>% 
-  st_sf(Region = "South Africa",.)
+  st_sf(Region = implementation,.)
 st_crs(river_expansion) <- st_crs(4326)                                          
 river_expansion <- st_transform(river_expansion, crs = crs)
 
