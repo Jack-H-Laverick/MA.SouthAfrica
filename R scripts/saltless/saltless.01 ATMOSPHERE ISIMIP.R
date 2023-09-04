@@ -37,11 +37,11 @@ exact_extract(.x, domains, "mean") %>%                                      # Ex
 Deposition_lab <- mutate(Deposition, Oxidation_state = factor(Oxidation_state, levels = c("O", "R"),
                                                           labels = c(expression("Oxidised Nitrogen (NO"["y"]*")"), expression("Reduced Nitrogen (NH"["x"]*")"))))
 
-ggplot(data = Deposition_lab) + 
-  geom_line(aes(x = Date, y = Measured, colour = Shore), size = 0.25) +
+ggplot(data = filter(Deposition_lab, Date > 2000)) + 
+  geom_line(aes(x = Date, y = Measured, colour = Shore), size = 0.15) +
   theme_minimal() +
   facet_grid(rows = vars(Oxidation_state), scales = "free_y", labeller = label_parsed) +
-  labs(y = expression("mmols N m"^{-2}*"Day"^{-1}), caption = "EMEP Atmospheric Nitrogen deposition") +
+  labs(y = expression("mmols N m"^{-2}*"Day"^{-1}), caption = "ISIMIP Atmospheric Nitrogen deposition") +
   theme(legend.position = "top") +
   NULL
 
@@ -50,5 +50,5 @@ ggsave("./Figures/saltless/Atmospheric N Deposition.png", last_plot(), dpi = 500
 #### Save ####
 
 Deposition %>% 
-  dplyr::select(Month, Oxidation_state, Shore,  Year) %>%  
+  dplyr::select(Month, Oxidation_state, Shore, Year, Measured) %>%  
   saveRDS("./Objects/Atmospheric N deposition.rds")

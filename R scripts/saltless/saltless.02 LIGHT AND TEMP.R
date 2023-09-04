@@ -21,15 +21,17 @@ all_files <- list.files("../Shared data/Light and air temp", recursive = TRUE, f
 
 examples <- group_by(all_files, Type) %>% slice(1) %>% ungroup()            # Get one example for each file type
 
-Space <- Window(examples[1,]$File, w = 1, e = 21, s = 58, n = 72)           # Get values to crop a netcdf file spatially at import. Both data types share a grid
-
 domains <- readRDS("./Objects/Domains.rds") %>%                             # Load SF polygons of the MiMeMo model domains
   st_transform(crs = 4326)
 
+Space <- Window(examples[1,]$File, shift = TRUE, sf = st_buffer(domains, 100000)) # Get values to crop a netcdf file spatially at import. Both data types share a grid
+
 sf_use_s2(F)
 domains_mask <- expand.grid(Longitude = Space$Lons, Latitude = Space$Lats) %>% # Get the data grid
+  mutate(Longitude = ifelse(Longitude > 180, Longitude-360, Longitude)) %>%    # adjust for 0:360 longitudes during voronoi gridding
   st_as_sf(coords = c("Longitude", "Latitude"), crs = 4326, remove = F) %>%    # Convert to SF
-  voronoi_grid(domains) %>%                                                    # Weight points within the model domain
+  mutate(Longitude = ifelse(Longitude < 0, Longitude+360, Longitude)) %>%      # Undo adjustment for joins in get_air function 
+  voronoi_grid(st_make_valid(domains)) %>%                                                    # Weight points within the model domain
   select(-c(Elevation, area, geometry))  
 sf_use_s2(T)
 
