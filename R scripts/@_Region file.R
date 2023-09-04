@@ -20,7 +20,8 @@ pre <- list(scale = 1, width = 12, height = 10, units = "cm", dpi = 500) # The s
 
 SDepth <- 50                  # Shallow deep boundary
 DDepth <- 800                 # Maximum depth
-
+Distance <- 20                # Minimum distance from shore buffer for the inshore zone (pulled by the implementation doc)
+  
 #### bathymetry.5 MODEL DOMAIN ####
 
 shape <- function(matrix, label = "DUMMY") {
@@ -65,13 +66,11 @@ rm(Inshore_Ocean1, Inshore_Ocean2)
 
 #### expand polygon for sampling rivers ####
 
-river_expansion <- matrix(c(13, 73,
-                            0, 80,
-                            0, 85,
-                            63, 85,
-                            73, 77,
-                            30, 71,
-                            13, 73),
+river_expansion <- matrix(c(28, -30,
+                            28, -38.5,
+                            13, -38.5,
+                            13, -30,
+                            28, -30),
                           ncol = 2, byrow = T) %>% 
   list() %>% 
   st_polygon() %>% 
