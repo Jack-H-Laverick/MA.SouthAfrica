@@ -92,7 +92,7 @@ ggplot(clipped) +
 
 Domains <- transmute(clipped, 
                      Shore = ifelse(Depth == 50, "Inshore", "Offshore"),
-                     area = as.numeric(st_area(shrunk)),
+                     area = as.numeric(st_area(clipped)),
                      Elevation = exactextractr::exact_extract(GEBCO, shrunk, "mean")) %>% 
   st_transform(crs = crs)
 
