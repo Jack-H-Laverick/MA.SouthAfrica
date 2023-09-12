@@ -161,4 +161,4 @@ Physics_new <- mutate(Physics_template, SLight = My_light$Measured,
                      
 write.csv(Physics_new, 
           file = stringr::str_glue("./StrathE2E/Models/{implementation}/2010-2019/Driving/physics_{toupper(implementation)}_2010-2019.csv"),
-          row.names = F, )
+          row.names = F)
