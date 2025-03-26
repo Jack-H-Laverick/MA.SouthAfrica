@@ -1,75 +1,127 @@
-
-## There are artifacts in the digitisation of the habitat maps which break SF, I have
-## cleaned up the large offshore sand polygon below, to stop the errors.
+# Convert NGU classess to 8 StrathE2E habitat types
 
 #### Set up ####
 
-rm(list=ls())
+rm(list = ls())
 
-Packages <- c("MiMeMo.tools", "stars", "raster")                 # List packages
-lapply(Packages, library, character.only = TRUE)                 # Load packages
+packages <- c("MiMeMo.tools", "stars") # List packages
+lapply(packages, library, character.only = TRUE) # Load packages
 source("./R scripts/@_Region file.R")
+library(ggpattern)
 
-domains <- readRDS("./Objects/Domains.rds") %>%                  # Load SF polygons of the MiMeMo model domains
-  st_transform(crs = 4326)                                       # Transform to Lat/Lon to match other objects
+domains <- readRDS("./Objects/Domains.rds") %>% # Load SF polygons of the MiMeMo model domains
+    st_transform(crs = 9822) # Transform to Lat/Lon to match other objects
 
-polygons <- readRDS("./Data/Habitats.rds") %>%                   # Ben's Map
-  st_make_valid()
+sanbi_ecosystem_map <- st_read("./Data/spatial/SANBI-MarineEcosystemMap2018/MarineEcosystemMap2018_beta.shp")
+sanbi_ecosystem_map <- st_transform(sanbi_ecosystem_map, crs = 9822)
 
-sf_use_s2(FALSE)
+rocky_broad_categories <- c(
+    "Rocky and mixed shore",
+    "Deep rocky shelf",
+    "Shallow rocky shelf"
+)
+sanbi_broad <- sanbi_ecosystem_map[sanbi_ecosystem_map$BroadEcosy %in% rocky_broad_categories, ]
 
-#### Cleaning ####
+sanbi_substratum <- filter(
+    sanbi_ecosystem_map,
+    str_detect(sanbi_ecosystem_map$Substratum, "Rocky")
+)
 
-ggplot(polygons) +                                               # Lots of whispy bits
-  geom_sf(aes(fill = Habitat))
+ggplot() +
+    geom_sf(data = domains) +
+    geom_sf(data = st_intersection(sanbi_broad, domains), aes(fill = BroadEcosy), alpha = 0.3)
 
-sand <- filter(polygons, Habitat == "sand", Shore == "Offshore") # Work on just the worst polygon 
-plot(sand)
+ggplot() +
+    geom_sf(data = domains) +
+    geom_sf(data = st_intersection(sanbi_substratum, domains), aes(fill = Substratum), alpha = 0.3)
 
-bbp = st_as_sf(st_as_sfc(st_bbox(sand)), crs=4326)               # Get an sf object of the bounding box
 
-test <- st_difference(bbp, sand) %>%                             # cut the negative of the shape
-  st_cast("POLYGON") %>%                                         # Access each sub-shape separately
-  mutate(area = as.numeric(st_area(st_make_valid(.)))) %>%       # Calculate their size
-  filter(area > 100000000) %>%                                   # Now remove all the tiny holes
-  st_union()                                                     # And join all the shapes together again
-  
-plot(test)                                                       # We now only have the "real" holes in the habitat map
-plot(sand)
+sediment_polygons <- st_read("./Data/spatial/SA_sediment_features.gpkg") # Import full sediment grid
+sediment_polygons <- st_transform(sediment_polygons, crs = 9822)
+sediment_labels <- c(
+    "sandy_gravel" = 1,
+    "sand" = 2,
+    "muddy_sand" = 3,
+    "sandy_mud" = 4,
+    "mud" = 5,
+    "gravelly_mud" = 6,
+    "gravel_mud-sand-gravel" = 7
+)
+match_sediment_name <- function(x) names(which(sediment_labels == x))
+sediment_polygons$surficial_sediment_class <- sapply(
+    sediment_polygons$surficial_sediment,
+    match_sediment_name
+)
 
-final <- st_difference(bbp, test) %>%                            # Cut the negative out of the bounding box to get the shape back
-  rename(geometry = "x") %>% 
-  st_as_sf(sf_column_name = "geometry") %>% 
-  mutate(Habitat = "sand", Shore = "Offshore")                   # Reinstate names
+mud_labels <- c("sandy_mud", "mud", "gravelly_mud")
+sand_labels <- c("muddy_sand", "sand")
+# Note gravel_mud-sand-gravel is a single sediment label as the colours were not distinguishable
+# on the Birch et al. 1986 source map.
+gravel_labels <- c("sandy_gravel", "gravel_mud-sand-gravel")
 
-plot(final)
+sediment_polygons$coarse_class <- ""
+sediment_polygons$coarse_class <- ifelse(sediment_polygons$surficial_sediment_class %in% mud_labels, "mud", sediment_polygons$coarse_class)
+sediment_polygons$coarse_class <- ifelse(sediment_polygons$surficial_sediment_class %in% sand_labels, "sand", sediment_polygons$coarse_class)
+sediment_polygons$coarse_class <- ifelse(sediment_polygons$surficial_sediment_class %in% gravel_labels, "gravel", sediment_polygons$coarse_class)
 
-new_polygons <- filter(polygons, paste(Habitat, Shore) != "sand Offshore") %>% # Remove the old polygon
-  bind_rows(final) %>%                                              # and add in the cleaned one
-  mutate(Habitat = str_to_title(Habitat)) %>% 
-  mutate(Habitat = ifelse(Habitat == "Mud", "Silt", Habitat))
+ggplot() +
+    geom_sf(data = domains, color = alpha("black", 0.1)) +
+    geom_sf(data = st_intersection(sediment_polygons, domains), aes(fill = coarse_class), alpha = 0.3) +
+    geom_sf(data = st_intersection(sanbi_substratum, domains), aes(color = Substratum))
 
-ggplot(new_polygons) +
-  geom_sf(aes(fill = Habitat), alpha = 0.5)                      # No obvious overlaps
+translate <- read.csv("./Data/Sediment habitats.csv") %>% # Import sediment aggregations
+    mutate(Sed_class = as.factor(SEDKORNSTR)) %>%
+    select(Sed_class, Habitat) # Drop excess columns
 
-saveRDS(new_polygons, "./Objects/Habitats.rds")
+# #### Define geographic extent of each habitat type ####
+#
+# habitats <- left_join(sediment, translate) %>% # Attach habitat labels to predicted NGU classes
+#     mutate(
+#         Sed_class = as.factor(Sed_class), # Convert to factors
+#         Habitat = as.factor(Habitat)
+#     ) %>%
+#     sfc_as_cols() # Get coordinates from sf formatting to define a raster
+#
+# numeric_habitats <- mutate(habitats, Habitat = as.numeric(Habitat)) # Convert factor to numeric as st_rasterize expects numbers
+#
+# polygons <- st_rasterize(numeric_habitats["Habitat"], # Rasterize habiat labels
+#     nx = length(unique(habitats$x)), # At the resolution of the original data
+#     ny = length(unique(habitats$y))
+# ) %>%
+#     st_as_sf(aspoints = FALSE, merge = TRUE) %>% # Merge pixels into contiguous polygons
+#     mutate(Habitat = factor(Habitat, labels = levels(habitats$Habitat))) %>% # Reinstate labels for factor
+#     group_by(Habitat) %>%
+#     summarise(Habitat = Habitat[1]) # Combine polygons into a single row per habitat
+#
+# plot(polygons)
+#
+# polygons <- st_intersection(
+#     st_make_valid(st_transform(polygons, crs = crs)), # Split sediment polygons along model zones
+#     st_transform(domains, crs = crs)
+# ) %>%
+#     select(-c(Elevation, area)) %>% # Drop excess data
+#     st_transform(crs = 4326) # Switch back to mercator
+
+saveRDS(polygons, "./Objects/Habitats.rds")
 
 #### Calculate proportion of model zones in each habitat ####
 
-proportions <- new_polygons %>% 
-  mutate(Cover = as.numeric(st_area(.))) %>%                     # Measure the area of each habitat type
-  st_drop_geometry() %>%                                         # Drop SF formatting
-  mutate(Cover = Cover/sum(Cover)) %>%                           # Calculate the proportion of the model zone in each sediment polygon 
-  rename(Bottom = Habitat)
+proportions <- polygons %>%
+    mutate(Cover = as.numeric(st_area(.))) %>% # Measure the area of each habitat type
+    st_drop_geometry() %>% # Drop SF formatting
+    mutate(Cover = Cover / sum(Cover)) %>% # Calculate the proportion of the model zone in each sediment polygon
+    rename(Bottom = Habitat)
 
 saveRDS(proportions, "./Objects/Sediment area proportions.rds")
 
 ggplot(proportions) +
-  geom_col(aes(x = Shore, y = Cover*100, fill = Bottom), position = "Dodge") +
-  theme_minimal() +
-  theme(panel.grid.major.x = element_blank(),
-        legend.position = "top") +
-  viridis::scale_fill_viridis(discrete = T, name = "Sediment class:") +
-  labs(y = "Cover (%)", x = NULL, caption = "Percentage of model domain in each habitat class")
+    geom_col(aes(x = Shore, y = Cover * 100, fill = Bottom), position = "Dodge") +
+    theme_minimal() +
+    theme(
+        panel.grid.major.x = element_blank(),
+        legend.position = "top"
+    ) +
+    viridis::scale_fill_viridis(discrete = T, name = "Sediment class:") +
+    labs(y = "Cover (%)", x = NULL, caption = "Percentage of model domain in each habitat class")
 
 ggsave("./Figures/saltless/Habitat types.png", width = 16, height = 8, units = "cm")
