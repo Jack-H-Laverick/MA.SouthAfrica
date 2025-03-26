@@ -1,5 +1,16 @@
 # Convert NGU classess to 8 StrathE2E habitat types
 
+# Sources
+# Domain - Inshore/Offshore domain defined by bathymetry in ./bathymetry/bathymetry.01 DEFINE DOMAIN-BIG.R
+#
+# Sediment habitat classifications - `Birch et al. (1986): Texture and composition of surficial sediments`
+# - this map was originally in a pdf form. The pdf was converted to an image and the image was
+#   manually georeferenced in QGIS (using thin-line-splice algorithm). Colours were adjusted in
+#   GIMP photo processing software, and polygons were created from the raster in QGIS.
+#
+# Rock habitat classification - SANBI Marine Ecosystem Map (2018).
+# - https://bgis.sanbi.org/SpatialDataset/Detail/2681
+
 #### Set up ####
 
 rm(list = ls())
@@ -55,8 +66,8 @@ sediment_polygons$surficial_sediment_class <- sapply(
 
 mud_labels <- c("sandy_mud", "mud", "gravelly_mud")
 sand_labels <- c("muddy_sand", "sand")
-# Note gravel_mud-sand-gravel is a single sediment label as the colours were not distinguishable
-# on the Birch et al. 1986 source map.
+# Note gravel_mud-sand-gravel is a single sediment label as the colours of 'grave' and 'mud-sand-gravel'
+# were not distinguishable on the Birch et al. 1986 source map.
 gravel_labels <- c("sandy_gravel", "gravel_mud-sand-gravel")
 
 sediment_polygons$coarse_class <- ""
