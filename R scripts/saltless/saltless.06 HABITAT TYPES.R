@@ -21,7 +21,7 @@ source("./R scripts/@_Region file.R")
 library(ggpattern)
 
 domains <- readRDS("./Objects/Domains.rds") %>% # Load SF polygons of the MiMeMo model domains
-    st_transform(crs = 9822) # Transform to Lat/Lon to match other objects
+    st_transform(crs = 9822) # Moved to CRS EPSG:9822 as it is equal-area to allow for accurate area calculations
 
 sanbi_ecosystem_map <- st_read("./Data/spatial/SANBI-MarineEcosystemMap2018/MarineEcosystemMap2018_beta.shp")
 sanbi_ecosystem_map <- st_transform(sanbi_ecosystem_map, crs = 9822)
@@ -80,9 +80,9 @@ ggplot() +
     geom_sf(data = st_intersection(sediment_polygons, domains), aes(fill = coarse_class), alpha = 0.3) +
     geom_sf(data = st_intersection(sanbi_substratum, domains), aes(color = Substratum))
 
-translate <- read.csv("./Data/Sediment habitats.csv") %>% # Import sediment aggregations
-    mutate(Sed_class = as.factor(SEDKORNSTR)) %>%
-    select(Sed_class, Habitat) # Drop excess columns
+# translate <- read.csv("./Data/Sediment habitats.csv") %>% # Import sediment aggregations
+#     mutate(Sed_class = as.factor(SEDKORNSTR)) %>%
+#     select(Sed_class, Habitat) # Drop excess columns
 
 # #### Define geographic extent of each habitat type ####
 #
@@ -117,7 +117,7 @@ saveRDS(polygons, "./Objects/Habitats.rds")
 
 #### Calculate proportion of model zones in each habitat ####
 
-proportions <- polygons %>%
+proportions <- st_intersection(sediment_polygons, domains) %>%
     mutate(Cover = as.numeric(st_area(.))) %>% # Measure the area of each habitat type
     st_drop_geometry() %>% # Drop SF formatting
     mutate(Cover = Cover / sum(Cover)) %>% # Calculate the proportion of the model zone in each sediment polygon
