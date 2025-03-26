@@ -8,4 +8,6 @@
 .Rproj.user
 .Rhistory
 .Ruserdata
+.Rprofile
+.lintr
 Project runtime.png
