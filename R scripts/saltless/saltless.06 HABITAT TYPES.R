@@ -80,48 +80,43 @@ ggplot() +
     geom_sf(data = st_intersection(sediment_polygons, domains), aes(fill = coarse_class), alpha = 0.3) +
     geom_sf(data = st_intersection(sanbi_substratum, domains), aes(color = Substratum))
 
-# translate <- read.csv("./Data/Sediment habitats.csv") %>% # Import sediment aggregations
-#     mutate(Sed_class = as.factor(SEDKORNSTR)) %>%
-#     select(Sed_class, Habitat) # Drop excess columns
+st_erase <- function(x, y) st_difference(x, st_union(st_combine(y))) # Helper function that removes all of y from x
 
-# #### Define geographic extent of each habitat type ####
-#
-# habitats <- left_join(sediment, translate) %>% # Attach habitat labels to predicted NGU classes
-#     mutate(
-#         Sed_class = as.factor(Sed_class), # Convert to factors
-#         Habitat = as.factor(Habitat)
-#     ) %>%
-#     sfc_as_cols() # Get coordinates from sf formatting to define a raster
-#
-# numeric_habitats <- mutate(habitats, Habitat = as.numeric(Habitat)) # Convert factor to numeric as st_rasterize expects numbers
-#
-# polygons <- st_rasterize(numeric_habitats["Habitat"], # Rasterize habiat labels
-#     nx = length(unique(habitats$x)), # At the resolution of the original data
-#     ny = length(unique(habitats$y))
-# ) %>%
-#     st_as_sf(aspoints = FALSE, merge = TRUE) %>% # Merge pixels into contiguous polygons
-#     mutate(Habitat = factor(Habitat, labels = levels(habitats$Habitat))) %>% # Reinstate labels for factor
-#     group_by(Habitat) %>%
-#     summarise(Habitat = Habitat[1]) # Combine polygons into a single row per habitat
-#
-# plot(polygons)
-#
-# polygons <- st_intersection(
-#     st_make_valid(st_transform(polygons, crs = crs)), # Split sediment polygons along model zones
-#     st_transform(domains, crs = crs)
-# ) %>%
-#     select(-c(Elevation, area)) %>% # Drop excess data
-#     st_transform(crs = 4326) # Switch back to mercator
+# Merge sediment and rock polygons to create a single set (first subset by the domain polygons)
+sub_sediment <- st_intersection(sediment_polygons, domains) %>%
+    mutate(habitat_class = coarse_class) %>%
+    group_by(habitat_class, Shore) %>%
+    summarise(geometry = st_union(geom)) %>% # Convert polygons into a multipolygon for each combination
+    ungroup() %>%
+    st_make_valid()
 
-saveRDS(polygons, "./Objects/Habitats.rds")
+sub_rocks <- st_intersection(sanbi_substratum, domains) %>% # here we can choose to use rock polygons from the BroadEcosy or Substratum columns.
+    mutate(habitat_class = "rock") %>%
+    group_by(habitat_class, Shore) %>%
+    summarise(geometry = st_union(geometry)) %>% # Convert polygons into a multipolygon for each combination
+    ungroup() %>%
+    st_make_valid()
+
+# Remove the areas that are rock from the `sub_sediment` polygons
+sediment_minus_rock <- st_erase(sub_sediment, sub_rocks)
+ggplot() +
+    geom_sf(data = st_erase(sub_sediment, sub_rocks), aes(fill = habitat_class))
+
+# Combine the sediment minus rock areas and rock polygons
+habitats <- rbind(sediment_minus_rock, sub_rocks)
+alpha_values <- c("Inshore" = 0.2, "Offshore" = 1.0)
+ggplot() +
+    geom_sf(data = habitats, aes(fill = habitat_class, alpha = Shore)) +
+    scale_alpha_manual(values = alpha_values)
+
+saveRDS(habitats, "./Objects/Habitats.rds")
 
 #### Calculate proportion of model zones in each habitat ####
-
-proportions <- st_intersection(sediment_polygons, domains) %>%
+proportions <- habitats %>%
     mutate(Cover = as.numeric(st_area(.))) %>% # Measure the area of each habitat type
     st_drop_geometry() %>% # Drop SF formatting
     mutate(Cover = Cover / sum(Cover)) %>% # Calculate the proportion of the model zone in each sediment polygon
-    rename(Bottom = Habitat)
+    rename(Bottom = habitat_class)
 
 saveRDS(proportions, "./Objects/Sediment area proportions.rds")
 
@@ -134,5 +129,4 @@ ggplot(proportions) +
     ) +
     viridis::scale_fill_viridis(discrete = T, name = "Sediment class:") +
     labs(y = "Cover (%)", x = NULL, caption = "Percentage of model domain in each habitat class")
-
 ggsave("./Figures/saltless/Habitat types.png", width = 16, height = 8, units = "cm")
