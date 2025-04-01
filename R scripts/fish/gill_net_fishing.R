@@ -13,9 +13,9 @@ gn_intensity <- as.numeric(gn_intensity)
 # Check if terra is interpretting the values as continuous or categorical
 max(values(gn_intensity, na.rm = TRUE))
 
-sa_outline <- ne_countries(country = "south africa")
+sa_outline <- ne_countries(country = "south africa") %>% transform(crs = crs(gn_intensity))
 ggplot() +
     geom_sf(data = gn_areas, alpha = 0.2) +
     geom_spatraster(data = gn_intensity, na.rm = TRUE) +
-    # geom_sf(data = sa_outline, alpha = 0.3) +
+    geom_sf(data = sa_outline, alpha = 0.3) +
     scale_fill_viridis()
