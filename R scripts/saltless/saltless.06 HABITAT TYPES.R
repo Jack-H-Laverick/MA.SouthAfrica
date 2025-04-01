@@ -103,10 +103,11 @@ ggplot() +
     geom_sf(data = st_erase(sub_sediment, sub_rocks), aes(fill = habitat_class))
 
 # Combine the sediment minus rock areas and rock polygons
-habitats <- rbind(sediment_minus_rock, sub_rocks)
+habitats <- rbind(sediment_minus_rock, sub_rocks) %>%
+    rename(Habitat = "habitat_class")
 alpha_values <- c("Inshore" = 0.2, "Offshore" = 1.0)
 ggplot() +
-    geom_sf(data = habitats, aes(fill = habitat_class, alpha = Shore)) +
+    geom_sf(data = habitats, aes(fill = Habitat, alpha = Shore)) +
     scale_alpha_manual(values = alpha_values)
 
 saveRDS(habitats, "./Objects/Habitats.rds")
