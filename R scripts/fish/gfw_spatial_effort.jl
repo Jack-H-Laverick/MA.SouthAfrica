@@ -18,7 +18,7 @@ function point_polygon_intersection(points, polygon)
 end
 
 domains = GDF.read("./Objects/Domains.gpkg")
-domains.geometry = GO.reproject(domains.geom; source_crs = GFT.EPSG(9822), target_crs = GFT.EPSG(4326))
+domains.geometry = GO.reproject(domains.geom; source_crs = GFT.EPSG(4222), target_crs = GFT.EPSG(4326))
 domain_poly = first(GO.union(domains.geometry...; target = GI.PolygonTrait()))
 
 # Filter the fleet daily data
