@@ -104,7 +104,8 @@ ggplot() +
 
 # Combine the sediment minus rock areas and rock polygons
 habitats <- rbind(sediment_minus_rock, sub_rocks) %>%
-    rename(Habitat = "habitat_class")
+    rename(Habitat = "habitat_class") %>%
+    st_transform(crs = 4326)
 alpha_values <- c("Inshore" = 0.2, "Offshore" = 1.0)
 ggplot() +
     geom_sf(data = habitats, aes(fill = Habitat, alpha = Shore)) +
