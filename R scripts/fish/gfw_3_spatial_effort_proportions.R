@@ -34,7 +34,7 @@ extracted_data <- map(
     function(x) polygon_extraction(x, habitats)
 )
 extracted_data <- rbindlist(extracted_data) %>%
-    group_by(year) %>%
+    group_by(year, variable) %>%
     mutate(proportion = hours / sum(hours)) %>%
     ungroup()
 
