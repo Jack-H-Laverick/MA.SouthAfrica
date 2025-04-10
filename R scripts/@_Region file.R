@@ -127,21 +127,4 @@ river_expansion <- matrix(
     st_sfc() %>%
     st_sf(Region = implementation, .)
 st_crs(river_expansion) <- st_crs(4326)
-river_expansion <- matrix(
-    c(
-        13, 73,
-        0, 80,
-        0, 85,
-        63, 85,
-        73, 77,
-        30, 71,
-        13, 73
-    ),
-    ncol = 2, byrow = T
-) %>%
-    list() %>%
-    st_polygon() %>%
-    st_sfc() %>%
-    st_sf(Region = implementation, .)
-st_crs(river_expansion) <- st_crs(4326)
 river_expansion <- st_transform(river_expansion, crs = crs)
