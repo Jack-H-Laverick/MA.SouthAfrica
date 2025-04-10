@@ -26,26 +26,10 @@ domains <- readRDS("./Objects/Domains.rds") %>% # Load SF polygons of the MiMeMo
 sanbi_ecosystem_map <- st_read("./Data/spatial/SANBI-MarineEcosystemMap2018/MarineEcosystemMap2018_beta.shp")
 sanbi_ecosystem_map <- st_transform(sanbi_ecosystem_map, crs = 9822)
 
-rocky_broad_categories <- c(
-    "Rocky and mixed shore",
-    "Deep rocky shelf",
-    "Shallow rocky shelf"
-)
-sanbi_broad <- sanbi_ecosystem_map[sanbi_ecosystem_map$BroadEcosy %in% rocky_broad_categories, ]
-
 sanbi_substratum <- filter(
     sanbi_ecosystem_map,
     str_detect(sanbi_ecosystem_map$Substratum, "Rocky")
 )
-
-ggplot() +
-    geom_sf(data = domains) +
-    geom_sf(data = st_intersection(sanbi_broad, domains), aes(fill = BroadEcosy), alpha = 0.3)
-
-ggplot() +
-    geom_sf(data = domains) +
-    geom_sf(data = st_intersection(sanbi_substratum, domains), aes(fill = Substratum), alpha = 0.3)
-
 
 sediment_polygons <- st_read("./Data/spatial/SA_sediment_features.gpkg") # Import full sediment grid
 sediment_polygons <- st_transform(sediment_polygons, crs = 9822)
@@ -75,11 +59,6 @@ sediment_polygons$coarse_class <- ifelse(sediment_polygons$surficial_sediment_cl
 sediment_polygons$coarse_class <- ifelse(sediment_polygons$surficial_sediment_class %in% sand_labels, "sand", sediment_polygons$coarse_class)
 sediment_polygons$coarse_class <- ifelse(sediment_polygons$surficial_sediment_class %in% gravel_labels, "gravel", sediment_polygons$coarse_class)
 
-ggplot() +
-    geom_sf(data = domains, color = alpha("black", 0.1)) +
-    geom_sf(data = st_intersection(sediment_polygons, domains), aes(fill = coarse_class), alpha = 0.3) +
-    geom_sf(data = st_intersection(sanbi_substratum, domains), aes(color = Substratum))
-
 st_erase <- function(x, y) st_difference(x, st_union(st_combine(y))) # Helper function that removes all of y from x
 
 # Merge sediment and rock polygons to create a single set (first subset by the domain polygons)
@@ -99,27 +78,26 @@ sub_rocks <- st_intersection(sanbi_substratum, domains) %>% # here we can choose
 
 # Remove the areas that are rock from the `sub_sediment` polygons
 sediment_minus_rock <- st_erase(sub_sediment, sub_rocks)
-ggplot() +
-    geom_sf(data = st_erase(sub_sediment, sub_rocks), aes(fill = habitat_class))
 
 # Combine the sediment minus rock areas and rock polygons
 habitats <- rbind(sediment_minus_rock, sub_rocks) %>%
     rename(Habitat = "habitat_class") %>%
-    st_transform(crs = 4326)
+    st_make_valid()
 alpha_values <- c("Inshore" = 0.2, "Offshore" = 1.0)
 ggplot() +
     geom_sf(data = habitats, aes(fill = Habitat, alpha = Shore)) +
     scale_alpha_manual(values = alpha_values)
 
-saveRDS(habitats, "./Objects/Habitats.rds")
-
-#### Calculate proportion of model zones in each habitat ####
+#### Calculate proportion of model zones in each habitat - before converting reprojecting ####
 proportions <- habitats %>%
     mutate(Cover = as.numeric(st_area(.))) %>% # Measure the area of each habitat type
     st_drop_geometry() %>% # Drop SF formatting
     mutate(Cover = Cover / sum(Cover)) %>% # Calculate the proportion of the model zone in each sediment polygon
-    rename(Bottom = habitat_class)
+    rename(Bottom = Habitat)
 
+habitats <- st_transform(habitats, crs = crs) %>%
+    st_make_valid()
+saveRDS(habitats, "./Objects/Habitats.rds")
 saveRDS(proportions, "./Objects/Sediment area proportions.rds")
 
 ggplot(proportions) +
@@ -129,6 +107,6 @@ ggplot(proportions) +
         panel.grid.major.x = element_blank(),
         legend.position = "top"
     ) +
-    viridis::scale_fill_viridis(discrete = T, name = "Sediment class:") +
+    viridis::scale_fill_viridis(discrete = TRUE, name = "Sediment class:") +
     labs(y = "Cover (%)", x = NULL, caption = "Percentage of model domain in each habitat class")
 ggsave("./Figures/saltless/Habitat types.png", width = 16, height = 8, units = "cm")
