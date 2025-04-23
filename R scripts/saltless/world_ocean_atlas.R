@@ -1,4 +1,4 @@
-# Extract variable data from world ocean atlas for nitrate and ammonia for winter and summer
+# Extract variable data from world ocean atlas for nitrate for winter and summer
 # Concentrations from WOA are in micromol/kg of seawater
 
 library(terra)
@@ -6,6 +6,7 @@ library(tidyterra)
 library(ggplot2)
 library(sf)
 library(tidyverse)
+library(glue)
 
 source("./R scripts/@_Region file.R")
 
@@ -13,7 +14,7 @@ domain <- readRDS("./Objects/Domains.rds") %>% st_transform(crs = 4326)
 
 winter_months <- c("Nov", "Dec", "Jan", "Feb")
 summer_months <- c("May", "Jun", "Jul", "Aug")
-variable <- c("nitrate", "ammonia")
+variable <- c("nitrate")
 depth_label <- c("shallow", "deep")
 depth_ranges <- c("shallow" = paste0("0:", SDepth), "deep" = paste0(SDepth, ":", DDepth))
 
@@ -33,27 +34,34 @@ results <- results %>%
             depth == "deep" ~ depth_ranges["deep"]
         )
     ) %>%
-    select(c(season, month, variable, depth, depth_range))
+    mutate(
+        month_num = sprintf("%02d", match(month, month.abb))
+    ) %>%
+    select(c(season, month, month_num, variable, depth, depth_range))
 
 not_all_na <- \(r) {
     terra::global(r, fun = "notNA") > 0
 }
 
 extract_domain_woa <- function(domain, directory, depth_ranges, month, variable, depth, nc_var = "mn") {
+    message(glue("Extracting WOA data from depth {depth} for month {month}"))
     if (depth == "deep") {
         domain <- domain[domain$Shore == "Offshore", ]
+    } else {
+        domain$Elevation <- rep(domain[domain$Shore == "Inshore", ]$Elevation, length(domain$Elevation))
     }
     depth_range <- eval(parse(text = depth_ranges[depth]))
 
     fn <- list.files(directory) %>%
         .[str_detect(., str_sub(variable, 1, 1))] %>%
-        .[str_detect(., month)] %>%
+        .[str_detect(., glue("n{month}"))] %>%
         paste0(directory, .)
     terr <- rast(fn)
     terr_var <- varnames(terr)
     terr <- project(terr, "epsg:4326")
-    terr <- crop(terr, domain, mask = TRUE)
+    terr <- crop(terr, domain, mask = TRUE) # Mask raster cells not touching the domain
 
+    # Find mean variable
     terr_var <- terr_var[str_detect(terr_var, nc_var)]
     terr <- terr[terr_var]
 
@@ -68,62 +76,29 @@ extract_domain_woa <- function(domain, directory, depth_ranges, month, variable,
 
     target_depths <- names(terr)[depths > upper_depth & depths < lower_depth]
 
+    # Extract all values from the target_depth layers of the cropped raster and take the mean of the entire water volume
     target_layer_mean <- select(terr, target_depths) %>%
-        values(., na.rm = TRUE) %>%
-        mean()
+        values(.) %>%
+        mean(., na.rm = TRUE)
 
-    domain_vol <- sum(domain$area) * (lower_depth - upper_depth)
-
+    domain_vol <- sum(domain$area) * abs(mean(domain$Elevation))
     volume_mean <- target_layer_mean / 1000 / domain_vol # Convert from micromolar to millimolar then divide by target domain volume
 
     return(volume_mean)
 }
 
-pmap(results[, c("month", "variable", "depth")], function(month, variable, depth) {
+results$concentration <- pmap(results[, c("month_num", "variable", "depth")], function(month_num, variable, depth) {
     extract_domain_woa(
         domain = domain,
         directory = "../../Spatial Data/world_ocean_atlas/",
         depth_ranges = depth_ranges,
-        month = month,
+        month = month_num,
         variable = variable,
         depth = depth
     )
-})
+}) %>%
+    unlist()
 
-# nitrate_terr <- rast("../../Spatial Data/world_ocean_atlas/woa23_all_n00_01.nc") %>%
-#     project(., "epsg:4326") # Update to use crs from region file
-# nitrate_terr <- crop(nitrate_terr, domain, mask = TRUE) # Remove areas of nitrate_terr that don't touch domain polygons
-
-# nitrate_mn <- nitrate_terr["n_mn"]
-
-# depths <- names(nitrate_mn) %>%
-#     str_split_i(., "(=)", 2) %>%
-#     as.numeric()
-# inshore_depths <- names(nitrate_mn)[depths < 50]
-# offshore_depths <- names(nitrate_mn)[depths > 50 & depths < 800]
-
-# inshore_nitrate <- select(nitrate_mn, inshore_depths) %>% mean()
-# offshore_nitrate <- select(nitrate_mn, offshore_depths) %>% mean()
-
-# ggplot() +
-#     geom_spatraster(data = mean(inshore_nitrate)) +
-#     geom_sf(data = domain, alpha = 0.3)
-
-# ggplot() +
-#     geom_spatraster(data = offshore_nitrate) +
-#     geom_sf(data = domain, alpha = 0.3)
-
-# inshore_nitrate <- mean(values(inshore_nitrate), na.rm = TRUE)
-# offshore_nitrate <- mean(values(offshore_nitrate), na.rm = TRUE)
-
-# # Calculate concentrations as mM/m^3
-# # Assuming that micromol/kg concentrations are uM we divide concentrations by 1000 to get mM
-# # Thickness of inshore volume = 50m, thickness of offshore volume = 750m
-
-# inshore_nitrate <- inshore_nitrate / 1000
-# inshore_volume <- filter(domain, Shore == "Inshore")$area * SDepth
-# inshore_nitrate_m3 <- inshore_nitrate / inshore_volume
-
-# offshore_nitrate <- offshore_nitrate / 1000
-# offshore_volume <- filter(domain, Shore == "Offshore")$area * (DDepth - SDepth)
-# offshore_nitrate_m3 <- offshore_nitrate / offshore_volume
+season_mean <- results %>%
+    group_by(season, depth) %>%
+    summarise(concentration = mean(concentration))
