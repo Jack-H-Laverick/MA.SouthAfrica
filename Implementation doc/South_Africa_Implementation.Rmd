@@ -507,6 +507,21 @@ The following briefly describes the potentially time-varying driving data for th
 Processing-at-sea refers to the practice on some types of vessels of eviscerating selected proportions of the catch and returning the viscera to the sea as offal.
 To obtain the part of the landings being rejected at sea as offal, we calculated $(Round weight-post-processed weight)/Round weight$.
 
+# Target data {.unnumbered}
+Target data is used for optimisation in the fitting of parameters.
+
+## Biological target data
+
+## Physical target data
+
+### Seasonal nutrient concentrations
+Season allocations: seasonal nutrient concentrations were calculated using Nov-Feb as 'winter' months and May-Aug as 'summer' months to match the Northern Hemisphere development of StrathE2E, despite South Africa's austral seasons.
+
+Seasonal averaged nitrate concentrations were calculated from World Ocean Atlas 2023 data. Monthly data were obtained from [World Ocean Atlas](https://www.ncei.noaa.gov/products/world-ocean-atlas). For the shallow water volume all 1$\degree$ cells touching the domain containing valid data were extracted from depths between 0 and `r SDepth`.
+For the deep water volume all cells touching the offshore domain were extracted from depths between `r SDepth` and `r DDepth`. The volumes of the water layers were calculated as the polygon area multiplied by the average depth of the area from mean sea level.
+
+### Sediment chemistry
+
 # End {.unnumbered}
 
 ## Acknowledgements {.unnumbered}
