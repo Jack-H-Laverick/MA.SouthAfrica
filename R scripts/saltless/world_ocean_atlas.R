@@ -81,13 +81,18 @@ extract_domain_woa <- function(domain, directory, depth_ranges, month, variable,
         values(.) %>%
         mean(., na.rm = TRUE)
 
+    target_layer_std <- select(terr, target_depths) %>%
+        values(.) %>%
+        sd(., na.rm = TRUE)
+
     domain_vol <- sum(domain$area) * abs(mean(domain$Elevation))
     volume_mean <- target_layer_mean / 1000 / domain_vol # Convert from micromolar to millimolar then divide by target domain volume
+    volume_stdev <- target_layer_std / 1000 / domain_vol
 
-    return(volume_mean)
+    return(c(volume_mean, volume_stdev))
 }
 
-results$concentration <- pmap(results[, c("month_num", "variable", "depth")], function(month_num, variable, depth) {
+results[, c("mean_conc", "sd_conc")] <- pmap(results[, c("month_num", "variable", "depth")], function(month_num, variable, depth) {
     extract_domain_woa(
         domain = domain,
         directory = "../../Spatial Data/world_ocean_atlas/",
@@ -101,4 +106,4 @@ results$concentration <- pmap(results[, c("month_num", "variable", "depth")], fu
 
 season_mean <- results %>%
     group_by(season, depth) %>%
-    summarise(concentration = mean(concentration))
+    summarise(mean_conc = mean(mean_conc), std_conc = mean(sd_conc))
