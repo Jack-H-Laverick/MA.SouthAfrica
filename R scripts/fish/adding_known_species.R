@@ -1,0 +1,154 @@
+library(tidyverse)
+library(data.table)
+
+known_species <- read.csv("../../Fishing Data/MiMeMo fish guilds.csv", header = TRUE, sep = ";") %>%
+    select(!"X.1") %>%
+    mutate(Guild = if_else(Guild %in% c("Demersal (quota limited)", "Demersal (non quota)"), "Demersal", Guild))
+
+added_species_name <- c(
+    "Sardinops sagax",
+    "Etrumeus whiteheadi",
+    "Argyrozona argyrozona",
+    "Pterogymnus lanarius",
+    "Austroglossus microlepis",
+    "Jasus lalandii",
+    "Kajikia albida",
+    "Lampanyctodes hectoris",
+    "Austroglossus pectoralis",
+    "Chaceon maritae",
+    "Callorhinchus capensis",
+    "Petrus rupestris",
+    "Kajikia audax",
+    "Istiompax indica",
+    "Pseudopentaceros richardsoni",
+    "Notorynchus cepedianus",
+    "Cymatoceps nasutus",
+    "Acanthocybium solandri",
+    "Hyperoglyphe antarctica",
+    "Carcharodon carcharias",
+    "Triakis megalopterus",
+    "Galeocerdo cuvier",
+    "Lepidocybium flavobrunneum"
+)
+added_common_name <- c(
+    "Pacific Sardine",
+    "Whitehead's Round Herring",
+    "Carpenter Seabream",
+    "Panga Seabream",
+    "West coast Sole",
+    "Cape rock lobster",
+    "White Marlin",
+    "Hector's Lanternfish",
+    "Mud Sole",
+    "West African Geryon",
+    "Cape Elephantfish",
+    "Red Steenbras",
+    "Striped Marlin",
+    "Black Marlin",
+    "Pelagic Armourhead",
+    "Broadnose Sevengill shark",
+    "Black Musselcracker",
+    "Wahoo",
+    "Barenose warehou",
+    "Great White Shark",
+    "Sharptooth Houndshark",
+    "Tiger Shark",
+    "Escolar"
+)
+added_groupname <- c(
+    "Sardine",
+    "Herring",
+    "Seabream",
+    "Seabream",
+    "Sole",
+    "Lobster",
+    "Marlin",
+    "Lanternfish",
+    "Sole",
+    "Crab",
+    "Chimaeras",
+    "Steenbras",
+    "Marlin",
+    "Marlin",
+    "Armourhead",
+    "Shark",
+    "Musselcracker",
+    "Wahoo",
+    "Warehou",
+    "Shark",
+    "Shark",
+    "Shark",
+    "Mackerel"
+)
+added_category <- c(
+    "Planktivore",
+    "Planktivore",
+    "Demersal",
+    "Demersal",
+    "Demersal",
+    "Benthic invertebrate",
+    "Pelagic",
+    "Planktivore",
+    "Demersal",
+    "Benthic Invertebrate",
+    "Demersal",
+    "Demersal",
+    "Pelagic",
+    "Pelagic",
+    "Demersal",
+    "Demersal",
+    "Demersal",
+    "Demersal",
+    "Demersal",
+    "Pelagic",
+    "Demersal",
+    "Demersal",
+    "Demersal"
+)
+added_fao <- c("CHP", "WRR", "SLF", "PGA", "SOW", NA, "WHM", NA, "SOE", "CGE", "CHM", "RER", "MLS", "BLM", "EDR", "NTC", "CYM", "WAH", "BWA", "WSH", NA, "TIG", "LEC")
+added_guild <- c(
+    "Planktivore",
+    "Planktivore",
+    "Demersal",
+    "Demersal",
+    "Demersal",
+    "Benthos carnivore",
+    "Pelagic",
+    "Planktivore",
+    "Demersal",
+    "Benthos carnivore",
+    "Demersal",
+    "Demersal",
+    "Pelagic",
+    "Pelagic",
+    "Demersal",
+    "Demersal",
+    "Demersal",
+    "Demersal",
+    "Demersal",
+    "Pelagic",
+    "Demersal",
+    "Demersal",
+    "Demersal"
+)
+filler <- rep(NA, length(added_species_name))
+
+added_species <- data.frame(
+    Scientific.name = added_species_name,
+    Common.name = added_common_name,
+    Groupname = added_groupname,
+    Category = added_category,
+    Subcategory = filler,
+    Pricedata10 = filler,
+    STECFspecies10 = filler,
+    STECFname = filler,
+    IMR.code = filler,
+    FAO = added_fao,
+    X = filler,
+    Statistics.Iceland = filler,
+    Hagstova.frorya = filler,
+    Guild = added_guild
+)
+
+known_species <- rbindlist(list(known_species, added_species))
+write.csv(known_species, "./Objects/updated_known_fish_guilds.csv")
