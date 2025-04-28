@@ -3,7 +3,6 @@
 
 library(terra)
 library(tidyterra)
-library(ggplot2)
 library(sf)
 library(tidyverse)
 library(glue)
@@ -13,8 +12,8 @@ source("./R scripts/@_Region file.R")
 domain <- readRDS("./Objects/Domains.rds") %>%
     mutate(area_proportion = area / sum(area))
 
-winter_months <- c("Nov", "Dec", "Jan", "Feb")
-summer_months <- c("May", "Jun", "Jul", "Aug")
+winter_months <- c("Nov", "Dec", "Jan", "Feb") # Winter months are Nov-Feb despite South Africa being in southern hemisphere to align with existing StrathE2E setup.
+summer_months <- c("May", "Jun", "Jul", "Aug") # Summer months are May-Aug despite South Africa being in southern hemisphere to align with existing StrathE2E setup.
 variable <- c("nitrate")
 depth_label <- c("shallow", "deep")
 depth_ranges <- c(
@@ -23,6 +22,7 @@ depth_ranges <- c(
     "deep" = paste0(SDepth, ":", abs(domain[domain$Shore == "Offshore", ]$Elevation))
 )
 
+# Need to extract data for each month and depth level
 results <- expand.grid(c(winter_months, summer_months), variable, depth_label, stringsAsFactors = FALSE)
 colnames(results) <- c("month", "variable", "depth")
 
@@ -34,15 +34,9 @@ results <- results %>%
         )
     ) %>%
     mutate(
-        depth_range = case_when(
-            depth == "shallow" ~ depth_ranges["shallow"],
-            depth == "deep" ~ depth_ranges["deep"]
-        )
-    ) %>%
-    mutate(
         month_num = sprintf("%02d", match(month, month.abb))
     ) %>%
-    select(c(season, month, month_num, variable, depth, depth_range))
+    select(c(season, month, month_num, variable, depth))
 
 not_all_na <- \(r) {
     terra::global(r, fun = "notNA") > 0
@@ -57,7 +51,6 @@ extract_domain_woa <- function(domain, directory, depth_ranges, month, variable,
     terr <- rast(fn)
     terr_var <- varnames(terr)
     terr <- project(terr, "epsg:4326")
-    terr <- crop(terr, domain, mask = TRUE) # Mask raster cells not touching the domain
 
     # Find mean variable
     terr_var <- terr_var[str_detect(terr_var, nc_var)]
@@ -66,8 +59,11 @@ extract_domain_woa <- function(domain, directory, depth_ranges, month, variable,
     # Remove depth layers that contain no data
     terr <- select(terr, names(terr)[not_all_na(terr)])
 
+    # For deep layer only the offshore area data is used and a single mean value is calculated.
     if (depth == "deep") {
-        domain <- domain[domain$Shore == "Offshore", ]
+        domain_l <- domain[domain$Shore == "Offshore", ]
+        terr <- crop(terr, domain_l, mask = TRUE) # Mask raster cells not touching the domain
+
         depth_range <- depth_ranges[depth]
         depth_range <- eval(parse(text = depth_range))
 
@@ -88,15 +84,20 @@ extract_domain_woa <- function(domain, directory, depth_ranges, month, variable,
             values(.) %>%
             sd(., na.rm = TRUE)
 
-        domain_vol <- sum(domain$area) * abs(mean(domain$Elevation))
+        domain_vol <- sum(domain_l$area) * (depth_range[2] - depth_range[1])
         volume_mean <- target_layer_mean / 1000 / domain_vol # Convert from micromolar to millimolar then divide by target domain volume
         volume_stdev <- target_layer_std / 1000 / domain_vol
+
+        # For shallow layer the mean is calculated for the offshore and inshore shallow layers separately as they have different depths
     } else if (depth == "shallow") {
         volume_means <- c("inshore" = NA, "offshore" = NA)
         volume_stds <- c("inshore" = NA, "offshore" = NA)
 
         for (i in seq_along(volume_means)) {
             zone <- names(volume_means[i])
+            domain_l <- domain[str_detect(domain$Shore, regex(zone, ignore_case = TRUE)), ]
+            terr <- crop(terr, domain_l, mask = TRUE) # Mask raster cells not touching the domain
+
             depth_range <- depth_ranges[names(depth_ranges)[str_detect(names(depth_ranges), zone)]]
             depth_range <- eval(parse(text = depth_range))
 
@@ -117,10 +118,12 @@ extract_domain_woa <- function(domain, directory, depth_ranges, month, variable,
                 values(.) %>%
                 sd(., na.rm = TRUE)
 
-            domain_vol <- sum(domain$area) * (depth_range[2] - depth_range[1])
+            domain_vol <- sum(domain_l$area) * (depth_range[2] - depth_range[1])
             volume_means[i] <- target_layer_mean / 1000 / domain_vol # Convert from micromolar to millimolar then divide by target domain volume
             volume_stds[i] <- target_layer_std / 1000 / domain_vol
         }
+
+        # Combine inshore and offshore statistics using area-weighting
         volume_mean <- weighted.mean(volume_means, domain$area_proportion)
         volume_stdev <- weighted.mean(volume_stds, domain$area_proportion)
     } else {
@@ -142,6 +145,7 @@ results[, c("mean_conc", "sd_conc")] <- pmap(results[, c("month_num", "variable"
 }) %>%
     unlist()
 
+# Calculate single season statistics
 season_mean <- results %>%
     group_by(season, depth) %>%
     summarise(mean_conc = mean(mean_conc), std_conc = mean(sd_conc))
