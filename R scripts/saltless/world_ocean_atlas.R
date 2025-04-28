@@ -10,13 +10,18 @@ library(glue)
 
 source("./R scripts/@_Region file.R")
 
-domain <- readRDS("./Objects/Domains.rds") %>% st_transform(crs = 4326)
+domain <- readRDS("./Objects/Domains.rds") %>%
+    mutate(area_proportion = area / sum(area))
 
 winter_months <- c("Nov", "Dec", "Jan", "Feb")
 summer_months <- c("May", "Jun", "Jul", "Aug")
 variable <- c("nitrate")
 depth_label <- c("shallow", "deep")
-depth_ranges <- c("shallow" = paste0("0:", SDepth), "deep" = paste0(SDepth, ":", DDepth))
+depth_ranges <- c(
+    "shallow_inshore" = paste0("0:", abs(domain[domain$Shore == "Inshore", ]$Elevation)),
+    "shallow_offshore" = paste0("0:", SDepth),
+    "deep" = paste0(SDepth, ":", abs(domain[domain$Shore == "Offshore", ]$Elevation))
+)
 
 results <- expand.grid(c(winter_months, summer_months), variable, depth_label, stringsAsFactors = FALSE)
 colnames(results) <- c("month", "variable", "depth")
@@ -45,13 +50,6 @@ not_all_na <- \(r) {
 
 extract_domain_woa <- function(domain, directory, depth_ranges, month, variable, depth, nc_var = "mn") {
     message(glue("Extracting WOA data from depth {depth} for month {month}"))
-    if (depth == "deep") {
-        domain <- domain[domain$Shore == "Offshore", ]
-    } else {
-        domain$Elevation <- rep(domain[domain$Shore == "Inshore", ]$Elevation, length(domain$Elevation))
-    }
-    depth_range <- eval(parse(text = depth_ranges[depth]))
-
     fn <- list.files(directory) %>%
         .[str_detect(., str_sub(variable, 1, 1))] %>%
         .[str_detect(., glue("n{month}"))] %>%
@@ -68,26 +66,66 @@ extract_domain_woa <- function(domain, directory, depth_ranges, month, variable,
     # Remove depth layers that contain no data
     terr <- select(terr, names(terr)[not_all_na(terr)])
 
-    depths <- names(terr) %>%
-        str_split_i(., "(=)", 2) %>%
-        as.numeric()
-    upper_depth <- head(depth_range, n = 1)
-    lower_depth <- tail(depth_range, n = 1)
+    if (depth == "deep") {
+        domain <- domain[domain$Shore == "Offshore", ]
+        depth_range <- depth_ranges[depth]
+        depth_range <- eval(parse(text = depth_range))
 
-    target_depths <- names(terr)[depths > upper_depth & depths < lower_depth]
+        depths <- names(terr) %>%
+            str_split_i(., "(=)", 2) %>%
+            as.numeric()
+        upper_depth <- head(depth_range, n = 1)
+        lower_depth <- tail(depth_range, n = 1)
 
-    # Extract all values from the target_depth layers of the cropped raster and take the mean of the entire water volume
-    target_layer_mean <- select(terr, target_depths) %>%
-        values(.) %>%
-        mean(., na.rm = TRUE)
+        target_depths <- names(terr)[depths > upper_depth & depths < lower_depth]
 
-    target_layer_std <- select(terr, target_depths) %>%
-        values(.) %>%
-        sd(., na.rm = TRUE)
+        # Extract all values from the target_depth layers of the cropped raster and take the mean of the entire water volume
+        target_layer_mean <- select(terr, target_depths) %>%
+            values(.) %>%
+            mean(., na.rm = TRUE)
 
-    domain_vol <- sum(domain$area) * abs(mean(domain$Elevation))
-    volume_mean <- target_layer_mean / 1000 / domain_vol # Convert from micromolar to millimolar then divide by target domain volume
-    volume_stdev <- target_layer_std / 1000 / domain_vol
+        target_layer_std <- select(terr, target_depths) %>%
+            values(.) %>%
+            sd(., na.rm = TRUE)
+
+        domain_vol <- sum(domain$area) * abs(mean(domain$Elevation))
+        volume_mean <- target_layer_mean / 1000 / domain_vol # Convert from micromolar to millimolar then divide by target domain volume
+        volume_stdev <- target_layer_std / 1000 / domain_vol
+    } else if (depth == "shallow") {
+        volume_means <- c("inshore" = NA, "offshore" = NA)
+        volume_stds <- c("inshore" = NA, "offshore" = NA)
+
+        for (i in seq_along(volume_means)) {
+            zone <- names(volume_means[i])
+            depth_range <- depth_ranges[names(depth_ranges)[str_detect(names(depth_ranges), zone)]]
+            depth_range <- eval(parse(text = depth_range))
+
+            depths <- names(terr) %>%
+                str_split_i(., "(=)", 2) %>%
+                as.numeric()
+
+            upper_depth <- head(depth_range, n = 1)
+            lower_depth <- tail(depth_range, n = 1)
+            target_depths <- names(terr)[depths > upper_depth & depths < lower_depth]
+
+            # Extract all values from the target_depth layers of the cropped raster and take the mean of the entire water volume
+            target_layer_mean <- select(terr, target_depths) %>%
+                values(.) %>%
+                mean(., na.rm = TRUE)
+
+            target_layer_std <- select(terr, target_depths) %>%
+                values(.) %>%
+                sd(., na.rm = TRUE)
+
+            domain_vol <- sum(domain$area) * (depth_range[2] - depth_range[1])
+            volume_means[i] <- target_layer_mean / 1000 / domain_vol # Convert from micromolar to millimolar then divide by target domain volume
+            volume_stds[i] <- target_layer_std / 1000 / domain_vol
+        }
+        volume_mean <- weighted.mean(volume_means, domain$area_proportion)
+        volume_stdev <- weighted.mean(volume_stds, domain$area_proportion)
+    } else {
+        stop(glue("Depth {depth} not found, only shallow or deep accepted."))
+    }
 
     return(c(volume_mean, volume_stdev))
 }
