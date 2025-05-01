@@ -28,7 +28,8 @@ added_species_name <- c(
     "Carcharodon carcharias",
     "Triakis megalopterus",
     "Galeocerdo cuvier",
-    "Lepidocybium flavobrunneum"
+    "Lepidocybium flavobrunneum",
+    "Teuthida"
 )
 added_common_name <- c(
     "Pacific Sardine",
@@ -53,7 +54,8 @@ added_common_name <- c(
     "Great White Shark",
     "Sharptooth Houndshark",
     "Tiger Shark",
-    "Escolar"
+    "Escolar",
+    "Squids"
 )
 added_groupname <- c(
     "Sardine",
@@ -78,7 +80,8 @@ added_groupname <- c(
     "Shark",
     "Shark",
     "Shark",
-    "Mackerel"
+    "Mackerel",
+    "Squids"
 )
 added_category <- c(
     "Planktivore",
@@ -103,9 +106,10 @@ added_category <- c(
     "Pelagic",
     "Demersal",
     "Demersal",
+    "Demersal",
     "Demersal"
 )
-added_fao <- c("CHP", "WRR", "SLF", "PGA", "SOW", NA, "WHM", NA, "SOE", "CGE", "CHM", "RER", "MLS", "BLM", "EDR", "NTC", "CYM", "WAH", "BWA", "WSH", NA, "TIG", "LEC")
+added_fao <- c("CHP", "WRR", "SLF", "PGA", "SOW", NA, "WHM", NA, "SOE", "CGE", "CHM", "RER", "MLS", "BLM", "EDR", "NTC", "CYM", "WAH", "BWA", "WSH", NA, "TIG", "LEC", NA)
 added_guild <- c(
     "Planktivore",
     "Planktivore",
@@ -127,6 +131,7 @@ added_guild <- c(
     "Demersal",
     "Demersal",
     "Pelagic",
+    "Demersal",
     "Demersal",
     "Demersal",
     "Demersal"
