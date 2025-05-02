@@ -107,7 +107,7 @@ added_category <- c(
     "Demersal",
     "Demersal",
     "Demersal",
-    "Demersal"
+    "Pelagic invertebrate"
 )
 added_fao <- c("CHP", "WRR", "SLF", "PGA", "SOW", NA, "WHM", NA, "SOE", "CGE", "CHM", "RER", "MLS", "BLM", "EDR", "NTC", "CYM", "WAH", "BWA", "WSH", NA, "TIG", "LEC", NA)
 added_guild <- c(
@@ -134,7 +134,7 @@ added_guild <- c(
     "Demersal",
     "Demersal",
     "Demersal",
-    "Demersal"
+    "Zooplankton carnivore"
 )
 filler <- rep(NA, length(added_species_name))
 
