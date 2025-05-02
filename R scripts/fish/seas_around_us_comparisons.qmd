@@ -6,6 +6,9 @@ format:
         fig-height: 5
         code-fold: true
         dpi: 400
+        toc: true
+        toc-depth: 2
+        embed-resources: true
 ---
 
 ```{r setup and load data, include=FALSE}
@@ -16,20 +19,20 @@ options(dplyr.summarise.inform = FALSE)
 landings <- read_parquet("../../Objects/sau_landings_assigned_guilds.parq")
 landings <- landings[!is.na(landings$Guild), ] # Keep only species previously assigned to StrathE2E guilds
 sau_species <- unique(landings$scientific_name)
-species <- c("agulhas_sole", "cape_hakes", "cape_horse_mackerel", "monkfish", "small_pelagic_fish", "squids", "soupfin_and_smoothhound")
-input_images <- sapply(species, function(x) glue("../../Objects/{x}_stock_status_2023.png"))
-input_images <- c(
-    input_images,
-    "../../Figures/seas_around_us_gear_proportions.gif",
-    "../../Figures/seas_around_us_gear_proportions_small_summed.png"
-)
-copied_images <- sapply(species, function(x) glue("seas_around_us_comparisons_files/figure-html/{x}_stock_status_2023.png"))
-copied_images <- c(
-    copied_images,
-    "seas_around_us_comparisons_files/figure-html/seas_around_us_gear_proportions.gif",
-    "seas_around_us_comparisons_files/figure-html/seas_around_us_gear_proportions_small_summed.png"
-)
-walk2(input_images, copied_images, function(x, y) file.copy(from = x, to = y, overwrite = TRUE))
+# species <- c("agulhas_sole", "cape_hakes", "cape_horse_mackerel", "monkfish", "small_pelagic_fish", "squids", "soupfin_and_smoothhound")
+# input_images <- sapply(species, function(x) glue("../../Objects/{x}_stock_status_2023.png"))
+# input_images <- c(
+#     input_images,
+#     "../../Figures/seas_around_us_gear_proportions.gif",
+#     "../../Figures/seas_around_us_gear_proportions_small_summed.png"
+# )
+# copied_images <- sapply(species, function(x) glue("seas_around_us_comparisons_files/figure-html/{x}_stock_status_2023.png"))
+# copied_images <- c(
+#     copied_images,
+#     "seas_around_us_comparisons_files/figure-html/seas_around_us_gear_proportions.gif",
+#     "seas_around_us_comparisons_files/figure-html/seas_around_us_gear_proportions_small_summed.png"
+# )
+# walk2(input_images, copied_images, function(x, y) file.copy(from = x, to = y, overwrite = TRUE))
 ```
 
 ```{r scraping stock status tables, include=FALSE}
@@ -71,12 +74,14 @@ ggplot() +
     geom_col(
         data = landings[landings$scientific_name == "Austroglossus pectoralis", ],
         aes(x = year, y = tonnes)
-    )
+    ) +
+    theme_minimal()
+
 ```
 
 Agulhas sole stock status report 
 
-![](/seas_around_us_comparisons_files/figure-html/agulhas_sole_stock_status_2023.png)
+![](/../../Objects/agulhas_sole_stock_status_2023.png)
 
 ## Cape Hakes (*Merluccius spp*).
 Peaks and troughs in trends of Cape Hakes catch are not well represented in Seas-Around-Us
@@ -91,19 +96,21 @@ ggplot() +
     geom_col(
         data = ch_landings,
         aes(x = year, y = tonnes_thousands)
-    ) +
+    )  +
+    theme_minimal() +
     labs(y = "Catch (tonnes (thousands))")
 ggplot() +
     geom_col(
         data = ch_landings,
         aes(x = year, y = tonnes_thousands, fill = gear_type)
-    ) +
+    )  +
+    theme_minimal() +
     labs(y = "Catch (tonnes (thousands))")
 ```
 
 Cape hakes stock status report 
 
-![](/seas_around_us_comparisons_files/figure-html/cape_hakes_stock_status_2023.png)
+![](/../../Objects/cape_hakes_stock_status_2023.png)
 
 ## Cape horse mackerel (*Trachurus capensis*)
 The overall trends in total catch for Cape Horse Mackerel are quite well represented, including
@@ -121,14 +128,15 @@ ggplot() +
     geom_col(
         data = chm_landings,
         aes(x = year, y = tonnes_thousands, fill = gear_type)
-    ) +
+    )  +
+    theme_minimal() +
     facet_wrap(~gear_type) +
     labs(y = "Catch (tonnes (thousands))")
 ```
 
 Cape horse mackerel stock status report 
 
-![](/seas_around_us_comparisons_files/figure-html/cape_horse_mackerel_stock_status_2023.png)
+![](/../../Objects/cape_horse_mackerel_stock_status_2023.png)
 
 ## Monkfish (*Lophius vomerinus*)
 Overall Monkfish landings are quite well represented in Seas-Around-Us data. In the peak catch
@@ -144,13 +152,14 @@ ggplot() +
     geom_col(
         data = mf_landings,
         aes(x = year, y = tonnes_thousands)
-    ) +
+    )  +
+    theme_minimal() +
     labs(y = "Catch (tonnes (thousands))")
 ```
 
 Monkfish stock status report
 
-![](/seas_around_us_comparisons_files/figure-html/monkfish_stock_status_2023.png)
+![](/../../Objects/monkfish_stock_status_2023.png)
 
 ## Small pelagic fish (sardine, anchovy and herring)
 Post-1977 catch of small pelagic fish (Engraulis capensis - Anchovy, Sardinops sagax - Sardine and
@@ -174,13 +183,14 @@ ggplot() +
         aes(x = year, y = tonnes_thousands, fill = scientific_name),
         alpha = 0.8
     ) +
+    theme_minimal() +
     scale_fill_manual(values = fish) +
     labs(y = "Catch (tonnes (thousands))")
 ```
 
 Small pelagic fish status report
 
-![](/seas_around_us_comparisons_files/figure-html/small_pelagic_fish_stock_status_2023.png)
+![](/../../Objects/small_pelagic_fish_stock_status_2023.png)
 
 ## Squids (Order Teuthida and genus *Loligo*)
 Landing data for Squids in the genus *Loligo* are well represented in the Seas-Around-Us data
@@ -198,6 +208,7 @@ ggplot() +
         aes(x = year, y = tonnes_thousands, fill = gear_type),
         position = "dodge"
     ) +
+    theme_minimal() +
     labs(y = "Catch (tonnes (thousands))", title = "Teuthida Squids")
     
     
@@ -207,11 +218,12 @@ ggplot() +
         aes(x = year, y = tonnes_thousands, fill = gear_type),
         position = "dodge"
     ) +
+    theme_minimal() +
     labs(y = "Catch (tonnes (thousands))", title = "Common Squids (genus Loligo)")
 ```
 
 Squids stock status report (genus Loligo specified)
-![](/seas_around_us_comparisons_files/figure-html/squids_stock_status_2023.png)
+![](/../../Objects/squids_stock_status_2023.png)
 
 ## West Coast Rock Lobster (*Jasus lalandii*)
 West coast rock lobster data (refered to as Cape rock lobster in stock status report) in
@@ -226,23 +238,27 @@ ggplot() +
     geom_col(
         data = landings[landings$scientific_name == "Jasus lalandii", ],
         aes(x = year, y = tonnes, fill = gear_type)
-    )
+    )  +
+    theme_minimal()
 
 ggplot() + 
     geom_col(
         data = landings[landings$scientific_name == "Jasus lalandii" & landings$year > 1997, ],
         aes(x = year, y = tonnes, fill = gear_type)
-    )
+    ) +
+    theme_minimal()
 ```
 
 West coast rock lobster stock status report 2023
 ```{r west coast rock lobster stock status}
 jasus_lalandii$tonnes <- as.numeric(sapply(jasus_lalandii$tonnes, remove_num_space))
+jasus_lalandii$season <- sapply(jasus_lalandii$season, function(x) str_split_i(x, "/", 1))
 ggplot() + 
     geom_col(
         data = jasus_lalandii,
         aes(x = season, y = tonnes)
-    )
+    )  +
+    theme_minimal()
 ```
 
 ## Tuna and large pelagics
@@ -262,14 +278,16 @@ ggplot() +
     geom_col(
         data = pelagic_landings,
         aes(x = year, y = tonnes, fill = gear_type)
-    ) + 
+    )  +
+    theme_minimal() +
     facet_wrap(~scientific_name)
 
 ggplot() +
     geom_col(
         data = pelagic_landings[pelagic_landings$gear_type == "pole and line", ],
         aes(x = year, y = tonnes)
-    ) + 
+    )  +
+    theme_minimal() + 
     facet_wrap(~scientific_name) +
     ggtitle("Pelagic fish landings for Pole and Line gear type")
 
@@ -277,7 +295,8 @@ ggplot() +
     geom_col(
         data = pelagic_landings[pelagic_landings$gear_type == "pole and line" & pelagic_landings$year > 2004, ],
         aes(x = year, y = tonnes)
-    ) + 
+    )  +
+    theme_minimal() + 
     facet_wrap(~scientific_name) +
     ggtitle("Pelagic fish landings for Pole and Line gear type from 2005")
 ```
@@ -302,7 +321,8 @@ ggplot() +
     geom_col(
         data = tuna_catch,
         aes(x = year, y = tonnes)
-    ) +
+    )  +
+    theme_minimal() +
     facet_wrap(~scientific_name) +
     ggtitle("Pelagic landings from stock status report (Pole and Line sector)")
 ```
@@ -324,11 +344,12 @@ ggplot() +
         aes(x = year, y = tonnes, fill = gear_type),
         alpha = 0.7
     ) +
+    theme_minimal() +
     facet_wrap(~scientific_name, ncol = 1)
 ```
 
 Soupfin and Smoothhound sharks stock status report 2023
-![](/seas_around_us_comparisons_files/figure-html/soupfin_and_smoothhound_stock_status_2023.png)
+![](/../../Objects/soupfin_and_smoothhound_stock_status_2023.png)
 
 ## Kelp harvest
 Kelp data is not included in SAU data, but is recorded as ~5,000 tonnes of kelp fronds harvested
@@ -344,7 +365,7 @@ The proposed gear types for South Africa StrathE2E implementation are:
 * pelagic longline
 * demersal longline (elasmobranch + hake)
 
-## Looking at the distribution of landings across gear types in Seas-Around-Us data
+## Looking at the distribution of landings across gear types in SAU data
 Overall the purse-seine gear-type dominates the distribution of landings in SAU data.
 It is likely that the squid-jig gear type has been labelled "small scale lines" or "unknown class" in
 SAU data, so these landings are summed with other small scale gear types in the second figure.
@@ -396,7 +417,8 @@ ggplot() +
     scale_fill_manual(values = palette_n)
 ```
 
-To compare landings more closely with chosen gear types (above) they have been collated to approximate these gear types. (Note that a pelagic and a demersal longline class are separate in our proposed gear types, but SAU data only has 'longline'. And there is no squid jig gear type in SAU data so this label has been given to 'small scale lines' as this is the gear type catching *Loligo* squid in SAU data.):
+## Approximating chosen StrathE2E gear classes from SAU data
+To compare landings more closely with chosen gear types (above) SAU landings have been collated to approximate these gear types. (Note that a pelagic and a demersal longline class are separate in our proposed gear types, but SAU data only has 'longline' (these could be split by Guild caught possibly). And there is no squid jig gear type in SAU data so this label has been given to 'small scale lines' as this is the gear type catching *Loligo* squid in SAU data.):
 
 * `nets including small scale` => bagnets, castnets, small scale gillnets, small scale encircling nets, small scale seine nets, small scale other nets, gillnets
 * `demersal + midwater trawl` => pelagic trawl, bottom trawl
@@ -406,7 +428,11 @@ To compare landings more closely with chosen gear types (above) they have been c
 * `purse seine` => purse seine
 * `other gears` => harpoon, small scale pots or traps, subsistence fishing gear, unknown class, hand or tools, unknown by source, artisinal fishing gear
 
-**Findings**: Overall `purse seine` gear type dominates distribution of catch (tonnes). Purse seine catch is mainly made up of planktivorous species (see [Sardine, Anchovy and Herring](#small-pelagic-fish-sardine-anchovy-and-herring). The proportion of catch from the trawl gear classes increases from 1980s. `Other gears` which includes miscellaneous gear types such as small scale pots, subsistence and artisinal fishing occupies an increasing proportion from 1990s onwards, as does the `small scale lines / squid jig` gear type. `nets (including small scale nets)`, `linefishery` and `longline` gear types have very low proportions of overall catch.
+**Findings**: 
+Overall `purse seine` gear type dominates distribution of catch (tonnes). Purse seine catch is mainly made up of planktivorous species (see [Sardine, Anchovy and Herring](#small-pelagic-fish-sardine-anchovy-and-herring). 
+The proportion of catch from the trawl gear classes increases from 1980s. 
+`Other gears` which includes miscellaneous gear types such as small scale pots, subsistence and artisinal fishing occupies an increasing proportion from 1990s onwards, as does the `small scale lines / squid jig` gear type. `small scale lines / squid jig` also catches a large amount of demersal fish, meaning these gear types would ideally be split with small scale lines assigned to linefishery and squid jig assigned its own gear class. However, this is not possible using the information from SAU data. `nets (including small scale nets)`, `linefishery` and `longline` gear types have very low proportions of overall catch.
+`Linefishery` gear type mainly catches migratory fish mainly consisting of [tunas](#tuna-and-large-pelagics).
 
 Distribution of catch by these assigned StrathE2E proposed gear types.
 ```{r strathe2e proposed gears}
@@ -435,9 +461,9 @@ ggplot() +
     geom_col(
         data = se2e_gear_landings[!str_detect(se2e_gear_landings$Guild, "(#)"), ],
         aes(x = year, y = tonnes, fill = Guild)
-    ) +
-    facet_wrap(~gear_type_se2e, scales = "free_y") +
-    theme_minimal()
+    )  +
+    theme_minimal() +
+    facet_wrap(~gear_type_se2e, scales = "free_y")
 ```
 
 Proportion of total landings for StrathE2E approximate gear types over time
@@ -451,7 +477,7 @@ ggplot() +
     theme_minimal()
 ```
 
-Distribution of purse-seine gear type landings
+Distribution of purse-seine gear type landings in guilds caught (almost completely planktivore).
 ```{r exploration of purse seine landings}
 p_s_landings <- se2e_gear_landings[se2e_gear_landings$gear_type_se2e == "purse seine", ] %>%
     group_by(year) %>%
