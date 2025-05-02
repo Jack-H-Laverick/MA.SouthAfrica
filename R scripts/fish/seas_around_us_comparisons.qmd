@@ -1,7 +1,5 @@
 ---
 title: "Comparing Seas-Around-Us to existing landings data"
-author: "Ben Grier"
-date: "2025-04-30"
 format:
     html:
         fig-width: 10
@@ -334,7 +332,7 @@ Soupfin and Smoothhound sharks stock status report 2023
 
 ## Kelp harvest
 Kelp data is not included in SAU data, but is recorded as ~5,000 tonnes of kelp fronds harvested
-per year.
+per year from 1990s-2020s in the stock status report 2023.
 
 # Seas Around Us gear-type distribution versus selected gears
 The proposed gear types for South Africa StrathE2E implementation are:
@@ -400,14 +398,15 @@ ggplot() +
 
 To compare landings more closely with chosen gear types (above) they have been collated to approximate these gear types. (Note that a pelagic and a demersal longline class are separate in our proposed gear types, but SAU data only has 'longline'. And there is no squid jig gear type in SAU data so this label has been given to 'small scale lines' as this is the gear type catching *Loligo* squid in SAU data.):
 
-* 'nets including small scale' => bagnets, castnets, small scale gillnets, small scale encircling nets, small scale seine nets, small scale other nets, gillnets
-* linefishery => handlines, pole and lines
-* small scale lines / squid jig => small scale lines, recreational fishing gear
-* longline => longline
-* purse seine => purse seine
-* other gears => harpoon, small scale pots or traps, subsistence fishing gear, unknown class, hand or tools, unknown by source, artisinal fishing gear
+* `nets including small scale` => bagnets, castnets, small scale gillnets, small scale encircling nets, small scale seine nets, small scale other nets, gillnets
+* `demersal + midwater trawl` => pelagic trawl, bottom trawl
+* `linefishery` => handlines, pole and lines
+* `small scale lines / squid jig` => small scale lines, recreational fishing gear
+* `longline` => longline
+* `purse seine` => purse seine
+* `other gears` => harpoon, small scale pots or traps, subsistence fishing gear, unknown class, hand or tools, unknown by source, artisinal fishing gear
 
-**Findings**: Overall purse seine gear type dominates distribution of catch (tonnes). Purse seine catch is mainly made up of planktivorous species (see [Sardine, Anchovy and Herring](## Small pelagic fish (sardine, anchovy and herring))). The proportion of catch from the trawl gear classes increases from 1980s. `Other gears` which includes miscellaneous gear types such as small scale pots, subsistence and artisinal fishing occupies an increasing proportion from 1990s onwards, as does the `small scale lines / squid jig` gear type. `nets (including small scale nets)`, `linefishery` and `longline` gear types have very low proportions of overall catch.
+**Findings**: Overall `purse seine` gear type dominates distribution of catch (tonnes). Purse seine catch is mainly made up of planktivorous species (see [Sardine, Anchovy and Herring](#small-pelagic-fish-sardine-anchovy-and-herring). The proportion of catch from the trawl gear classes increases from 1980s. `Other gears` which includes miscellaneous gear types such as small scale pots, subsistence and artisinal fishing occupies an increasing proportion from 1990s onwards, as does the `small scale lines / squid jig` gear type. `nets (including small scale nets)`, `linefishery` and `longline` gear types have very low proportions of overall catch.
 
 Distribution of catch by these assigned StrathE2E proposed gear types.
 ```{r strathe2e proposed gears}
