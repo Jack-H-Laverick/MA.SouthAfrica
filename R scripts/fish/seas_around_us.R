@@ -2,6 +2,7 @@ library(tidyverse)
 library(ggplot2)
 library(gganimate)
 library(randomcoloR)
+library(terra)
 
 check_species_match <- function(string_i, strings) {
     if (string_i %in% strings) { # Check if the string occurs in the vector of strings
@@ -80,17 +81,98 @@ sau_in_guilds <- known_species[, c("Scientific.name", "Guild")] %>%
 
 sau_in_guilds <- sau_in_guilds[!duplicated(sau_in_guilds), ]
 
-landings <- left_join(landings, sau_in_guilds[, c("scientific_name", "Guild")], by = "scientific_name")
+landings <- left_join(landings, sau_in_guilds[, c("scientific_name", "matched_mimemo_name", "Guild")], by = "scientific_name")
 arrow::write_parquet(landings, "./Objects/sau_landings_assigned_guilds.parq")
-guild_landings <- landings %>%
-    mutate(Guild = if_else(is.na(Guild), paste0("#", functional_group), Guild)) %>% # Mark functional groups from seas-around-us with `#`
-    group_by(year, gear_type, Guild) %>%
-    summarise(tonnes_mean = mean(tonnes), tonnes_sd = sd(tonnes))
+
+discards <- left_join(discards, sau_in_guilds[, c("scientific_name", "matched_mimemo_name", "Guild")], by = "scientific_name")
+arrow::write_parquet(discards, "./Objects/sau_discards_assigned_guilds.parq")
+
+# guild_landings <- landings %>%
+#     mutate(Guild = if_else(is.na(Guild), paste0("#", functional_group), Guild)) %>% # Mark functional groups from seas-around-us with `#`
+#     group_by(year, gear_type, Guild) %>%
+#     summarise(tonnes_mean = mean(tonnes), tonnes_sd = sd(tonnes))
+
+# ggplot() +
+#     geom_line(data = guild_landings[!str_detect(guild_landings$Guild, "(#)"), ], aes(x = year, y = tonnes_mean, color = Guild)) +
+#     # geom_ribbon(data = guild_landings, aes(x = year, ymin = tonnes_mean - tonnes_sd, ymax = tonnes_mean + tonnes_sd), alpha = 0.5) +
+#     facet_wrap(~gear_type, scales = "free_y")
+
+# ggplot() +
+#     geom_line(data = landings[landings$gear_type == "longline", ], aes(x = year, y = tonnes, color = scientific_name))
+
+strathe2e_gear_types <- c(
+    "midwater trawl",
+    "nets including small scale",
+    "linefishery",
+    "small scale lines / squid jig",
+    "longline",
+    "purse seine",
+    "demersal trawl"
+)
+strathe2e_guilds <- unique(known_species$Guild)
+
+# Landings by StrathE2E gear type and guild
+guild_gear_catch <- landings %>%
+    mutate(gear_type_se2e = case_when(
+        gear_type == "pelagic trawl" ~ "midwater trawl",
+        gear_type %in% c("bagnets", "cast nets", "small scale gillnets", "small scale encircling nets", "small scale seine nets", "small scale other nets", "gillnet") ~ "nets including small scale",
+        gear_type %in% c("hand lines", "pole and line", "recreational fishing gear") ~ "linefishery",
+        gear_type == "small scale lines" ~ "small scale lines / squid jig",
+        gear_type == "longline" ~ "longline",
+        gear_type == "purse seine" ~ "purse seine",
+        gear_type == "bottom trawl" ~ "demersal trawl",
+        .default = "other gears"
+    )) %>%
+    group_by(gear_type_se2e, Guild) %>%
+    summarise(tonnes = sum(tonnes)) %>%
+    filter(gear_type_se2e != "other gears")
+
+catch_heatmap <- expand.grid(
+    Guild = strathe2e_guilds,
+    gear_type_se2e = strathe2e_gear_types
+) %>%
+    left_join(., guild_gear_catch, by = c("gear_type_se2e", "Guild")) %>%
+    filter(Guild != "NA") # %>%
+# mutate(tonnes = ifelse(is.na(tonnes), 0, tonnes)) %>%
+# pivot_wider(names_from = gear_type_se2e, values_from = tonnes) %>%
+# column_to_rownames("Guild") %>%
+# as.matrix() %>%
+# .[order(row.names(.)), order(colnames(.))]
 
 ggplot() +
-    geom_line(data = guild_landings[!str_detect(guild_landings$Guild, "(#)"), ], aes(x = year, y = tonnes_mean, color = Guild)) +
-    # geom_ribbon(data = guild_landings, aes(x = year, ymin = tonnes_mean - tonnes_sd, ymax = tonnes_mean + tonnes_sd), alpha = 0.5) +
-    facet_wrap(~gear_type, scales = "free_y")
+    geom_tile(data = catch_heatmap, aes(x = gear_type_se2e, y = Guild, fill = tonnes)) +
+    scale_fill_viridis_c()
+ggplot() +
+    geom_tile(data = catch_heatmap, aes(x = gear_type_se2e, y = Guild, fill = log(tonnes))) +
+    scale_fill_viridis_c()
+
+
+# Discards by StrathE2E gear type and guild
+guild_gear_discards <- discards %>%
+    mutate(gear_type_se2e = case_when(
+        gear_type == "pelagic trawl" ~ "midwater trawl",
+        gear_type %in% c("bagnets", "cast nets", "small scale gillnets", "small scale encircling nets", "small scale seine nets", "small scale other nets", "gillnet") ~ "nets including small scale",
+        gear_type %in% c("hand lines", "pole and line", "recreational fishing gear") ~ "linefishery",
+        gear_type == "small scale lines" ~ "small scale lines / squid jig",
+        gear_type == "longline" ~ "'longline'",
+        gear_type == "purse seine" ~ "purse seine",
+        gear_type == "bottom trawl" ~ "demersal trawl",
+        .default = "other gears"
+    )) %>%
+    group_by(gear_type_se2e, Guild) %>%
+    summarise(tonnes = sum(tonnes)) %>%
+    filter(gear_type_se2e != "other gears")
+
+discards_heatmap <- expand.grid(
+    Guild = strathe2e_guilds,
+    gear_type_se2e = strathe2e_gear_types
+) %>%
+    left_join(., guild_gear_discards, by = c("gear_type_se2e", "Guild")) %>%
+    filter(Guild != "NA") # %>%
 
 ggplot() +
-    geom_line(data = landings[landings$gear_type == "longline", ], aes(x = year, y = tonnes, color = scientific_name))
+    geom_tile(data = discards_heatmap, aes(x = gear_type_se2e, y = Guild, fill = tonnes)) +
+    scale_fill_viridis_c()
+ggplot() +
+    geom_tile(data = discards_heatmap, aes(x = gear_type_se2e, y = Guild, fill = log(tonnes))) +
+    scale_fill_viridis_c()
