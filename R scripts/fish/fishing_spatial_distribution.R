@@ -37,7 +37,7 @@ mw_intensity <- subst(mw_intensity, NA, 0) # Replace NA values with 0 because th
 mw_data <- extract_habitat_data(mw_intensity, habitats, "mean", "midwater_trawl")
 # mw_data$coverage <- terra::extract(mw_intensity, habitats, fun = prop_covered)$OID
 
-# Load linefishery intensity data - catch in kg/area
+# Load linefishery intensity data - catch in kg/area ()
 lf_intensity <- "../../Spatial Data/fishing_effort_data/Linefish_Intensity/Linefish_Intensity/Linefish_Intensity.tif"
 lf_intensity <- trim(rast(lf_intensity))
 lf_intensity <- as.numeric(lf_intensity)
