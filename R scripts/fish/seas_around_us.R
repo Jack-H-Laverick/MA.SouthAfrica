@@ -110,29 +110,87 @@ strathe2e_gear_types <- c(
     "demersal trawl"
 )
 strathe2e_guilds <- unique(known_species$Guild)
+midwater_trawl_sau_gears <- "pelagic trawl"
+nets_sau_gears <- c(
+    "bagnets",
+    "cast nets",
+    "small scale gillnets",
+    "small scale encircling nets",
+    "small scale seine nets",
+    "small scale other nets",
+    "gillnet"
+)
+linefishery_sau_gears <- c("hand lines", "pole and line", "recreational fishing gear")
+small_lines_squidjig_sau_gears <- "small scale lines"
+longline_sau_gears <- "longline"
+purseseine_sau_gears <- "purse seine"
+demersal_trawl_sau_gears <- "bottom trawl"
+
+all_accounted_sau_gears <- c(midwater_trawl_sau_gears, nets_sau_gears, linefishery_sau_gears, small_lines_squidjig_sau_gears, longline_sau_gears, purseseine_sau_gears, demersal_trawl_sau_gears)
 
 # Landings by StrathE2E gear type and guild
 guild_gear_catch <- landings %>%
     mutate(gear_type_se2e = case_when(
-        gear_type == "pelagic trawl" ~ "midwater trawl",
-        gear_type %in% c("bagnets", "cast nets", "small scale gillnets", "small scale encircling nets", "small scale seine nets", "small scale other nets", "gillnet") ~ "nets including small scale",
-        gear_type %in% c("hand lines", "pole and line", "recreational fishing gear") ~ "linefishery",
-        gear_type == "small scale lines" ~ "small scale lines / squid jig",
-        gear_type == "longline" ~ "longline",
-        gear_type == "purse seine" ~ "purse seine",
-        gear_type == "bottom trawl" ~ "demersal trawl",
-        .default = "other gears"
+        gear_type == midwater_trawl_sau_gears ~ "midwater trawl",
+        gear_type %in% nets_sau_gears ~ "nets including small scale",
+        gear_type %in% linefishery_sau_gears ~ "linefishery",
+        gear_type == small_lines_squidjig_sau_gears ~ "small scale lines / squid jig",
+        gear_type == longline_sau_gears ~ "longline",
+        gear_type == purseseine_sau_gears ~ "purse seine",
+        gear_type == demersal_trawl_sau_gears ~ "demersal trawl",
+        !gear_type %in% all_accounted_sau_gears & fishing_sector == "Industrial" ~ "other industrial",
+        !gear_type %in% all_accounted_sau_gears & fishing_sector == "Artisanal" ~ "other artisinal",
+        !gear_type %in% all_accounted_sau_gears & fishing_sector == "Subsistence" ~ "other subsistence",
+        .default = "unaccounted"
     )) %>%
-    group_by(gear_type_se2e, Guild) %>%
-    summarise(tonnes = sum(tonnes)) %>%
-    filter(gear_type_se2e != "other gears")
+    group_by(fishing_sector, gear_type_se2e, Guild) %>%
+    summarise(tonnes = mean(tonnes))
 
-catch_heatmap <- expand.grid(
+guild_gear_catch_other_gears <- guild_gear_catch[str_detect(guild_gear_catch$gear_type_se2e, "(other )"), ]
+guild_gear_catch <- guild_gear_catch[!str_detect(guild_gear_catch$gear_type_se2e, "(other )"), ]
+
+redistribute_unaccounted_gears <- function(guild_gear_df, original_gears, additional_gears, sector) {
+    # guild_gear_df - dataframe containing the catch/discards data for all gear_type_se2e and all Guilds. I.e. expand.grid()
+    # original_gears contains the gear and guild -wise tonnes for all accounted strath e2e gears.
+    # additional_gears contains the gear and guild -wise tonnes for additional unaccounted SAU gears (e.g. "other Industrial")
+
+    contained_catch <- unique(original_gears[, c("fishing_sector", "gear_type_se2e")])
+    additional_catch <- additional_gears[additional_gears$fishing_sector == sector, ]
+    additional_catch <- additional_catch[!is.na(additional_catch$Guild), ]
+
+    target_se2e_gears <- contained_catch[contained_catch$fishing_sector == sector, ]$gear_type_se2e
+    n_target_se2e_gears <- length(target_se2e_gears)
+
+    for (guild in additional_catch$Guild) {
+        # Calculate the amount of additional-sector catch that should be redistributed to each of the existing StrathE2E gears of the target sector
+        additional_guild_sector_catch_per_gear <- filter(additional_catch, Guild == guild)$tonnes / n_target_se2e_gears
+
+        for (t_gear in target_se2e_gears) {
+            prior_catch <- guild_gear_df[guild_gear_df$Guild == guild & guild_gear_df$gear_type_se2e == t_gear, ]$tonnes
+            prior_catch <- ifelse(is.na(prior_catch), 0, prior_catch)
+
+            guild_gear_df[guild_gear_df$Guild == guild & guild_gear_df$gear_type_se2e == t_gear, ]$tonnes <- prior_catch + additional_guild_sector_catch_per_gear
+        }
+    }
+
+    return(guild_gear_df)
+}
+
+# filter(gear_type_se2e != "other gears")
+
+catch_matrix_data <- expand.grid(
     Guild = strathe2e_guilds,
     gear_type_se2e = strathe2e_gear_types
 ) %>%
-    left_join(., guild_gear_catch, by = c("gear_type_se2e", "Guild")) %>%
+    left_join(., guild_gear_catch[, c("gear_type_se2e", "Guild", "tonnes")], by = c("gear_type_se2e", "Guild")) %>%
     filter(Guild != "NA") # %>%
+
+redistributed_catch <- redistribute_unaccounted_gears(catch_matrix_data, guild_gear_catch, guild_gear_catch_other_gears, "Industrial")
+redistributed_catch <- redistribute_unaccounted_gears(redistributed_catch, guild_gear_catch, guild_gear_catch_other_gears, "Artisanal")
+redistributed_catch <- redistribute_unaccounted_gears(redistributed_catch, guild_gear_catch, guild_gear_catch_other_gears, "Recreational")
+
+redistributed_catch$redistributed_tonnes <- ifelse(is.na(catch_matrix_data$tonnes), 0, catch_matrix_data$tonnes) - redistributed_catch$tonnes
+
 # mutate(tonnes = ifelse(is.na(tonnes), 0, tonnes)) %>%
 # pivot_wider(names_from = gear_type_se2e, values_from = tonnes) %>%
 # column_to_rownames("Guild") %>%
@@ -140,8 +198,14 @@ catch_heatmap <- expand.grid(
 # .[order(row.names(.)), order(colnames(.))]
 
 ggplot() +
-    geom_tile(data = catch_heatmap, aes(x = gear_type_se2e, y = Guild, fill = tonnes)) +
-    scale_fill_viridis_c()
+    geom_tile(data = catch_matrix_data, aes(x = gear_type_se2e, y = Guild, fill = log(tonnes))) +
+    scale_fill_viridis_c() +
+    ggtitle("Catch before redistributing unaccounted geartypes based on sector")
+ggplot() +
+    geom_tile(data = redistributed_catch, aes(x = gear_type_se2e, y = Guild, fill = log(tonnes))) +
+    scale_fill_viridis_c() +
+    ggtitle("Catch after redistributing unaccounted geartypes based on sector")
+
 ggplot() +
     geom_tile(data = catch_heatmap, aes(x = gear_type_se2e, y = Guild, fill = log(tonnes))) +
     scale_fill_viridis_c()
