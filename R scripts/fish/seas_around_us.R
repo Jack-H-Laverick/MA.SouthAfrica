@@ -87,19 +87,6 @@ arrow::write_parquet(landings, "./Objects/sau_landings_assigned_guilds.parq")
 discards <- left_join(discards, sau_in_guilds[, c("scientific_name", "matched_mimemo_name", "Guild")], by = "scientific_name")
 arrow::write_parquet(discards, "./Objects/sau_discards_assigned_guilds.parq")
 
-# guild_landings <- landings %>%
-#     mutate(Guild = if_else(is.na(Guild), paste0("#", functional_group), Guild)) %>% # Mark functional groups from seas-around-us with `#`
-#     group_by(year, gear_type, Guild) %>%
-#     summarise(tonnes_mean = mean(tonnes), tonnes_sd = sd(tonnes))
-
-# ggplot() +
-#     geom_line(data = guild_landings[!str_detect(guild_landings$Guild, "(#)"), ], aes(x = year, y = tonnes_mean, color = Guild)) +
-#     # geom_ribbon(data = guild_landings, aes(x = year, ymin = tonnes_mean - tonnes_sd, ymax = tonnes_mean + tonnes_sd), alpha = 0.5) +
-#     facet_wrap(~gear_type, scales = "free_y")
-
-# ggplot() +
-#     geom_line(data = landings[landings$gear_type == "longline", ], aes(x = year, y = tonnes, color = scientific_name))
-
 strathe2e_gear_types <- c(
     "midwater trawl",
     "nets including small scale",
@@ -186,24 +173,26 @@ catch_matrix_data <- expand.grid(
     left_join(., guild_gear_catch[, c("gear_type_se2e", "Guild", "tonnes")], by = c("gear_type_se2e", "Guild")) %>%
     filter(Guild != "NA" & Guild != "") # %>%
 
-# Add longline bird landings data (catch for birds from longlines are added to landings because birds are taken to port in this fishery)
+# Add longline (pelagic and longline) bird landings data (catch for birds from longlines are added to landings because birds are taken to port in this fishery)
 # Data values taken from Rollinson et al (2017). Patterns and trends in seabird bycatch in the pelagic longline fishery off South Africa
+# And: Peterson et al. (2009). Seabird bycatch in the demersal longline fishery off South Africa
+# number of birds * bird mass (kg) / number of study years (for each data source pelagic and demersal)
 additional_bird_longline <- c(
-    482 * 3.8977, # Thalassarche cauta/steadi
-    159 * 3.2029, # Thalassarche melanophris
-    77 * 2.1288, # Thalassarche carteri
-    18 * 2.1288, # Thlassarche chlororhynchos
-    3 * 8.9056, # Diomedea sandfordi/epomophora
-    5 * 6.9613, # Diomedea exulans
-    7 * 4.2063, # Macronectes halli/giganteus
-    1541 * 1.213, # Procellaria aequinoctialis
-    1 * 1.131, # Procellaria cinerea
-    1 * 0.4296, # Daption capense
-    2 * 0.849, # Puffinus gravis
-    2 * 1.650, # Catharacta antarctica
-    45 * 2.643 # Morus capensis
+    (482 / 8) * 3.8977, # 482 Thalassarche cauta/steadi (Rollinson et al. 2017).
+    (159 / 8) * 3.2029, # 159 Thalassarche melanophris (Rollinson et al. 2017).
+    (77 / 8) * 2.1288, # 77 Thalassarche carteri (Rollinson et al. 2017).
+    ((18 / 8) + (3 / 7)) * 2.1288, # 18 Thlassarche chlororhynchos (Rollinson et al. 2017). (Peterson et al. 2009)
+    (3 / 8) * 8.9056, # 3 Diomedea sandfordi/epomophora (Rollinson et al. 2017).
+    (5 / 8) * 6.9613, # 5 Diomedea exulans (Rollinson et al. 2017).
+    (7 / 8) * 4.2063, # 7 Macronectes halli/giganteus (Rollinson et al. 2017).
+    ((1541 / 8) + (38 / 7)) * 1.213, # 1541 Procellaria aequinoctialis (Rollinson et al. 2017). 38 (Peterson et al. 2009)
+    (1 / 8) * 1.131, # 1 Procellaria cinerea (Rollinson et al. 2017).
+    (1 / 8) * 0.4296, # 1 Daption capense (Rollinson et al. 2017).
+    ((2 / 8) + (11 / 7)) * 0.849, # 2 Puffinus gravis (Rollinson et al. 2017). 11 (Peterson et al. 2009)
+    (2 / 8) * 1.650, # 2 Catharacta antarctica (Rollinson et al. 2017).
+    ((45 / 8) + (18 / 7)) * 2.643 # 45 Morus capensis (Rollinson et al. 2017). 18 (Peterson et al. 2009)
 )
-additional_bird_longline <- sum(additional_bird_longline) / 1000 / 8 # Calculate the annual average (study period 8 years) and convert to tonnes from kg
+additional_bird_longline <- sum(additional_bird_longline) / 1000 # Convert to tonnes from kg
 catch_matrix_data[catch_matrix_data$Guild == "Birds" & catch_matrix_data$gear_type_se2e == "longline", ]$tonnes <- additional_bird_longline
 
 # redistributed_catch <- redistribute_unaccounted_gears(catch_matrix_data, guild_gear_catch, guild_gear_catch_other_gears, "Industrial")
@@ -252,15 +241,34 @@ guild_gear_discards <- discards %>%
     summarise(tonnes = sum(tonnes)) %>%
     filter(gear_type_se2e != "other gears")
 
-discards_heatmap <- expand.grid(
+discards_matrix_data <- expand.grid(
     Guild = strathe2e_guilds,
     gear_type_se2e = strathe2e_gear_types
 ) %>%
     left_join(., guild_gear_discards, by = c("gear_type_se2e", "Guild")) %>%
     filter(Guild != "NA") # %>%
 
+# Add discards from seabirds in pelagic longline fishery from Peterson et al. (2009) Seabird bycatch in the pelagic longline fishery off south africa.
+# Peterson et al. 2009 suggest that 40% of seabirds are not brought back to shore for operational reasons.
+# We can then transform the catch back into total seabird bycatch and then get a discard rate
+total_bird_longline_bycatch <- catch_matrix_data[catch_matrix_data$Guild == "Birds" & catch_matrix_data$gear_type_se2e == "longline", ]$tonnes / 0.6
+discards_matrix_data[discards_matrix_data$Guild == "Birds" & discards_matrix_data$gear_type_se2e == "longline", ]$tonnes <- total_bird_longline_bycatch * 0.4
+
+# Add demersal trawl seabird discards data (assumed that birds are most often killed during waste dumping and are not kept to bring to port).
+# Data values taken from Watkins et al. (2008). Interactions between seabirds and deep-water hake trawl gear: an assessment of impacts in south African waters.
+# Number of birds * bird mass (kg)
+additional_bird_demersal_trawl <- c(
+    11 * 2.643, # 11 Morus capensis (Watkins et al. 2008)
+    13 * 3.8977, # 13 Thalassarche cauta (Watkins et al. 2008)
+    11 * 3.2029, # 11 Thalassarche melanophris (Watkins et al. 2008)
+    3 * 1.213, # 3 Procellaria aequinoctialis (Watkins et al. 2008)
+    1 * 0.787, # 1 Ardenna grisea (Watkins et al. 2008)
+    1 * 1.65 # 1 Stercorarius antarcticus (Watkins et al. 2008)
+)
+discards_matrix_data[discards_matrix_data$Guild == "Birds" & discards_matrix_data$gear_type_se2e == "demersal trawl", ]$tonnes <- sum(additional_bird_demersal_trawl) / 1000
+
 ggplot() +
-    geom_tile(data = discards_heatmap, aes(x = gear_type_se2e, y = Guild, fill = tonnes)) +
+    geom_tile(data = discards_matrix_data, aes(x = gear_type_se2e, y = Guild, fill = tonnes)) +
     scale_fill_viridis_c()
 ggplot() +
     geom_tile(data = discards_heatmap, aes(x = gear_type_se2e, y = Guild, fill = log(tonnes))) +
