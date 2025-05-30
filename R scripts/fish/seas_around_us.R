@@ -178,19 +178,19 @@ catch_matrix_data <- expand.grid(
 # And: Peterson et al. (2009). Seabird bycatch in the demersal longline fishery off South Africa
 # number of birds * bird mass (kg) / number of study years (for each data source pelagic and demersal)
 additional_bird_longline <- c(
-    (482 / 8) * 3.8977, # 482 Thalassarche cauta/steadi (Rollinson et al. 2017).
-    (159 / 8) * 3.2029, # 159 Thalassarche melanophris (Rollinson et al. 2017).
-    (77 / 8) * 2.1288, # 77 Thalassarche carteri (Rollinson et al. 2017).
-    ((18 / 8) + (3 / 7)) * 2.1288, # 18 Thlassarche chlororhynchos (Rollinson et al. 2017). (Peterson et al. 2009)
-    (3 / 8) * 8.9056, # 3 Diomedea sandfordi/epomophora (Rollinson et al. 2017).
-    (5 / 8) * 6.9613, # 5 Diomedea exulans (Rollinson et al. 2017).
-    (7 / 8) * 4.2063, # 7 Macronectes halli/giganteus (Rollinson et al. 2017).
-    ((1541 / 8) + (38 / 7)) * 1.213, # 1541 Procellaria aequinoctialis (Rollinson et al. 2017). 38 (Peterson et al. 2009)
-    (1 / 8) * 1.131, # 1 Procellaria cinerea (Rollinson et al. 2017).
-    (1 / 8) * 0.4296, # 1 Daption capense (Rollinson et al. 2017).
-    ((2 / 8) + (11 / 7)) * 0.849, # 2 Puffinus gravis (Rollinson et al. 2017). 11 (Peterson et al. 2009)
-    (2 / 8) * 1.650, # 2 Catharacta antarctica (Rollinson et al. 2017).
-    ((45 / 8) + (18 / 7)) * 2.643 # 45 Morus capensis (Rollinson et al. 2017). 18 (Peterson et al. 2009)
+    (482 / 8) * 3.8977, # 482 (pelagic longline) Thalassarche cauta/steadi (Rollinson et al. 2017).
+    (159 / 8) * 3.2029, # 159 (pelagic longline) Thalassarche melanophris (Rollinson et al. 2017).
+    (77 / 8) * 2.1288, # 77 (pelagic longline) Thalassarche carteri (Rollinson et al. 2017).
+    ((18 / 8) + (3 / 7)) * 2.1288, # 18 (pelagic longline) Thlassarche chlororhynchos (Rollinson et al. 2017).  3 (demersal longline) (Peterson et al. 2009)
+    (3 / 8) * 8.9056, # 3 (pelagic longline) Diomedea sandfordi/epomophora (Rollinson et al. 2017).
+    (5 / 8) * 6.9613, # 5 (pelagic longline) Diomedea exulans (Rollinson et al. 2017).
+    (7 / 8) * 4.2063, # 7 (pelagic longline) Macronectes halli/giganteus (Rollinson et al. 2017).
+    ((1541 / 8) + (38 / 7)) * 1.213, # 1541 (pelagic longline) Procellaria aequinoctialis (Rollinson et al. 2017). 38 (demersal longline) (Peterson et al. 2009)
+    (1 / 8) * 1.131, # 1 (pelagic longline) Procellaria cinerea (Rollinson et al. 2017).
+    (1 / 8) * 0.4296, # 1 (pelagic longline) Daption capense (Rollinson et al. 2017).
+    ((2 / 8) + (11 / 7)) * 0.849, # 2 (pelagic longline) Puffinus gravis (Rollinson et al. 2017). 11 (demersal longline) (Peterson et al. 2009)
+    (2 / 8) * 1.650, # 2 (pelagic longline) Catharacta antarctica (Rollinson et al. 2017).
+    ((45 / 8) + (18 / 7)) * 2.643 # 45 (pelagic longline) Morus capensis (Rollinson et al. 2017). 18 (demersal longline) (Peterson et al. 2009)
 )
 additional_bird_longline <- sum(additional_bird_longline) / 1000 # Convert to tonnes from kg
 catch_matrix_data[catch_matrix_data$Guild == "Birds" & catch_matrix_data$gear_type_se2e == "longline", ]$tonnes <- additional_bird_longline
@@ -208,17 +208,17 @@ catch_matrix_data[catch_matrix_data$Guild == "Birds" & catch_matrix_data$gear_ty
 # as.matrix() %>%
 # .[order(row.names(.)), order(colnames(.))]
 
-ggplot() +
-    geom_tile(data = catch_matrix_data, aes(x = gear_type_se2e, y = Guild, fill = tonnes)) +
-    scale_fill_viridis_c() +
-    ggtitle("Catch before redistributing unaccounted geartypes based on sector")
-ggplot() +
-    geom_tile(data = redistributed_catch, aes(x = gear_type_se2e, y = Guild, fill = tonnes)) +
-    scale_fill_viridis_c() +
-    ggtitle("Catch after redistributing unaccounted geartypes based on sector")
+# ggplot() +
+#     geom_tile(data = catch_matrix_data, aes(x = gear_type_se2e, y = Guild, fill = tonnes)) +
+#     scale_fill_viridis_c() +
+#     ggtitle("Catch before redistributing unaccounted geartypes based on sector")
+# ggplot() +
+#     geom_tile(data = redistributed_catch, aes(x = gear_type_se2e, y = Guild, fill = tonnes)) +
+#     scale_fill_viridis_c() +
+#     ggtitle("Catch after redistributing unaccounted geartypes based on sector")
 
 ggplot() +
-    geom_tile(data = catch_heatmap, aes(x = gear_type_se2e, y = Guild, fill = log(tonnes))) +
+    geom_tile(data = catch_matrix_data, aes(x = gear_type_se2e, y = Guild, fill = log(tonnes))) +
     scale_fill_viridis_c()
 
 
@@ -271,5 +271,5 @@ ggplot() +
     geom_tile(data = discards_matrix_data, aes(x = gear_type_se2e, y = Guild, fill = tonnes)) +
     scale_fill_viridis_c()
 ggplot() +
-    geom_tile(data = discards_heatmap, aes(x = gear_type_se2e, y = Guild, fill = log(tonnes))) +
+    geom_tile(data = discards_matrix_data, aes(x = gear_type_se2e, y = Guild, fill = log(tonnes))) +
     scale_fill_viridis_c()
