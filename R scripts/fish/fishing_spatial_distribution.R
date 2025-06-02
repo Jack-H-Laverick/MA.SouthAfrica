@@ -37,24 +37,6 @@ mw_intensity <- subst(mw_intensity, NA, 0) # Replace NA values with 0 because th
 mw_data <- extract_habitat_data(mw_intensity, habitats, "mean", "midwater_trawl")
 # mw_data$coverage <- terra::extract(mw_intensity, habitats, fun = prop_covered)$OID
 
-# Load linefishery intensity data - catch in kg/area ()
-lf_intensity <- "../../Spatial Data/fishing_effort_data/Linefish_Intensity/Linefish_Intensity/Linefish_Intensity.tif"
-lf_intensity <- trim(rast(lf_intensity))
-lf_intensity <- as.numeric(lf_intensity)
-lf_intensity <- project(lf_intensity, "epsg:4326", method = "near")
-lf_intensity <- subst(lf_intensity, NA, 0)
-lf_data <- extract_habitat_data(lf_intensity, habitats, "mean", "linefishery")
-# lf_coverage <- exact_extract()
-
-# Load squidjig intensity data - catch in kg/area
-sj_intensity <- "../../Spatial Data/fishing_effort_data/Squid_Intensity/Squid_Intensity/Squid_Fishery_Intensity.tif"
-sj_intensity <- trim(rast(sj_intensity))
-sj_intensity <- as.numeric(sj_intensity)
-sj_intensity <- project(sj_intensity, "epsg:4326", method = "near")
-sj_intensity <- subst(sj_intensity, NA, 0)
-sj_data <- extract_habitat_data(sj_intensity, habitats, "mean", "squid_jig")
-# sj_data$coverage <- terra::extract(sj_intensity, habitats, fun = prop_covered)$OID
-
 # Load pelagic longline - hooks/area
 pll_intensity <- "../../Spatial Data/fishing_effort_data/Pelagic_Longline_Intensity/Pelagic_Longline_Intensity/Pelagic_Longline_Intensity.tif"
 pll_intensity <- trim(rast(pll_intensity))
@@ -65,6 +47,7 @@ pll_data <- extract_habitat_data(pll_intensity, habitats, "mean", "pelagic_longl
 # pll_coverage <- exact_extract(pll_intensity, habitats)
 # pll_data$coverage <- sapply(pll_coverage, prop_covered)
 
+# Can include recreational fishing map - recreational fishers per km^2, beach seine - rights / km^2, gillnets - rights / km^2
 
 # Load demersal longline data - need to acquire
 
