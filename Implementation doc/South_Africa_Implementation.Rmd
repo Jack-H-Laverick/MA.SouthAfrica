@@ -111,7 +111,7 @@ Sand, mud and gravel sediment areas were derived from Birch et al. (1986) sedime
 
 *The perimeter of the model domain is defined by a `r DDepth`m depth contour and the South African. Open ocean boundaries occur wherever there is no coastline. In consultation with local collaborators, we imposed additional boundaries to limit the extent of the domain between 14.45E and 22.5E, and 28.6S and 36.98S.*
 
-![(#fig:habitats) Map of the model domain. StrathE2E defines seabed sediment habitats as inshore (blues) or offshore (yellows). Within each zone, three sediment classes are represented – fine (muddy, 1), medium (sandy, 2) and coarse (gravel, 3). A fourth class (rock, 0) represents an absence of soft sediment. Sedimentary data are derived from Birch et al. (1986), with the spatial extent of rock sediment derived from SANBI (2018) [-@laverick2022].](img/habitats.png)
+![(#fig:habitats) Map of the Southern Benguela model domain. StrathE2E defines seabed sediment habitats as inshore (blues) or offshore (yellows). Within each zone, three sediment classes are represented – fine (muddy, 1), medium (sandy, 2) and coarse (gravel, 3). A fourth class (rock, 0) represents an absence of soft sediment. Sedimentary data are derived from Birch et al. (1986), with the spatial extent of rock sediment derived from SANBI (2018) [-@laverick2022].](img/habitats.png)
 
 # Fixed Physical {.unnumbered}
 
@@ -127,7 +127,7 @@ $$log_{10}(porosity) = p_3 + p_4\left(\frac{1}{1+e^{(\frac{-log_{10}(D_{50})-p_1
 
 $$permeability = 10^{p_5}∙D_{50}^{*p_6}$$
 
-where D~50~\* = 0.11 ≤ D~50~ ≤ 0.50 p~5~ = -9.213, p~6~ = 4.615 [@heath20'15].
+where D~50~\* = 0.11 ≤ D~50~ ≤ 0.50 p~5~ = -9.213, p~6~ = 4.615 [@heath2015].
 
 These relationships are coded into the StrathE2E2 R-package with the parameters in the csv setup file for the North Sea model.
 The parameters are probably a reasonable starting point for any future model of a new region.
