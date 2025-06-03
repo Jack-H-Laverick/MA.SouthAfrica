@@ -32,19 +32,18 @@ domain_rough_bound <- ext(lims)
 
 # Load Midwater Trawl intensity data - need to acquire demersal trawl data - hours of trawling
 mw_intensity <- "../../Spatial Data/fishing_effort_data/Midwater_Trawl_Intensity/Midwater_Trawl_Intensity/Midwater_Trawl_Intensity.tif"
-mw_intensity <- crop(rast(mw_intensity), domain_rough_bound)
-mw_intensity <- project(mw_intensity, "epsg:4326", method = "near") # Using nearest neighbour method because values are somewhat discrete
+mw_intensity <- project(rast(mw_intensity), "epsg:4326", method = "near") # Using nearest neighbour method because values are somewhat discrete
 mw_intensity <- crop(mw_intensity, habitats)
 mw_intensity <- as.numeric(mw_intensity)
-mw_intensity <- subst(mw_intensity, NA, 0) # Replace NA values with 0 because there is no fishing in that area.
+mw_intensity <- subst(mw_intensity, 0, NA) # Replace NA values with 0 because there is no fishing in that area.
 mw_data <- extract_habitat_data(mw_intensity, habitats, "mean", "midwater_trawl")
 mw_data$midwater_trawl <- ifelse(is.na(mw_data$midwater_trawl), 0, mw_data$midwater_trawl)
 mw_data <- mw_data %>% mutate(proportion = midwater_trawl / sum(midwater_trawl))
 
 ggplot() +
-    geom_spatraster(data = mw_intensity, aes(fill = OID)) +
-    geom_sf(data = habitats, aes(color = Habitat), alpha = 0.4) +
-    scale_fill_viridis_c()
+    # geom_spatraster(data = mw_intensity, aes(fill = OID)) +
+    geom_sf(data = habitats[habitats$Habitat == "sand" & habitats$Shore == "Offshore", ], aes(color = Habitat), alpha = 0.4, fill = "black")
+# scale_fill_viridis_c()
 
 # Load spatial data for nets including small scale
 ## Load Gillnets
