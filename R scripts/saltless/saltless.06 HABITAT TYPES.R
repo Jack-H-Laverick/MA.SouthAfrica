@@ -95,8 +95,7 @@ proportions <- habitats %>%
     mutate(Cover = Cover / sum(Cover)) %>% # Calculate the proportion of the model zone in each sediment polygon
     rename(Bottom = Habitat)
 
-habitats <- st_transform(habitats, crs = crs) %>%
-    st_make_valid()
+habitats <- st_transform(habitats, crs = crs)
 saveRDS(habitats, "./Objects/Habitats.rds")
 saveRDS(proportions, "./Objects/Sediment area proportions.rds")
 
