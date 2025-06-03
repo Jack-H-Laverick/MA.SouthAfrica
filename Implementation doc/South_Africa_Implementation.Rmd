@@ -443,23 +443,14 @@ These parameters have to be derived by fitting.
 Finally, there are parameters which we can consider as driving data since they would be expected to vary with time.
 These are the activity rates of each gear, and their spatial distributions across the habitat types.
 
-Our principal data sources for the .
+Our principal data sources for the fishing catch data were obtained from Seas Around Us [@pauly20]. 
+<!-- need to note and subset the SAU data / cut by a proportion because the data spans larger than the domain. -->
 
-## Static gear-definition parameters in the fishing fleet model {.unnumbered}
+## Catching power and discard rates of each resource guild by each gear: {.unnumbered}
 
-Static parameters for the fishing fleet model were taken from the North Sea implementation (Heath et al. 2021), with the new set of gears operating in the Barents Sea reconciled with StrathE2E gear types as detailed below (`r table.ref("tab_gears_def")`).
-These parameters would be expected to remain constant over time, so any changes invoked would imply a change in the design or operation of a gear type.
-\newpage
+## Regional activity rates, of each gear type {.unnumbered}
 
-## Potentially time-varying parameters of the fishing fleet model {.unnumbered}
-
-The following briefly describes the potentially time-varying driving data for the fishing fleet model.
-
-### Catching power and discard rates of each resource guild by each gear: {.unnumbered}
-
-### Regional activity rates, of each gear type {.unnumbered}
-
-### Spatial proportional distribution of activity by each gear {.unnumbered}
+## Spatial proportional distribution of activity by each gear {.unnumbered}
 
 ## Data processing to derive timevarying parameters of the fishing fleet model Norwegian fishing catch and activity in the Norwegian Sea {.unnumbered}
 
@@ -511,6 +502,7 @@ To obtain the part of the landings being rejected at sea as offal, we calculated
 Target data is used for optimisation in the fitting of parameters.
 
 ## Biological target data
+Biological target data for the region such as production measures, diet composition and Production/Biomass ratios were provided by Lynne Shannon and Kelly Ortega-Cisneros from [@shannon20]. These data are derived from an Ecopath with Ecosim model of the Southern Benguela region.
 
 ## Physical target data
 
