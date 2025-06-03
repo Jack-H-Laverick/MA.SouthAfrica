@@ -62,6 +62,10 @@ find_species_match <- function(string_i, strings) {
     }
 }
 
+year_config <- read_toml("./R scripts/config.toml")
+start_year <- year_config$start_year
+end_year <- year_config$end_year
+
 sau <- read.csv("../../Fishing Data/SAU_SAWA/SAU EEZ 953 v50-1.csv")
 discards <- sau[sau$catch_type == "Discards", ]
 landings <- sau[sau$catch_type == "Landings", ]
@@ -108,7 +112,7 @@ nets_sau_gears <- c(
     "gillnet"
 )
 linefishery_sau_gears <- c("hand lines", "pole and line", "recreational fishing gear")
-small_lines_squidjig_sau_gears <- "small scale lines"
+squidjig_sau_gears <- "small scale lines"
 longline_sau_gears <- "longline"
 purseseine_sau_gears <- "purse seine"
 demersal_trawl_sau_gears <- "bottom trawl"
@@ -116,12 +120,12 @@ demersal_trawl_sau_gears <- "bottom trawl"
 all_accounted_sau_gears <- c(midwater_trawl_sau_gears, nets_sau_gears, linefishery_sau_gears, small_lines_squidjig_sau_gears, longline_sau_gears, purseseine_sau_gears, demersal_trawl_sau_gears)
 
 # Landings by StrathE2E gear type and guild
-guild_gear_catch <- landings %>%
+strath_e2e_gear_landings <- landings %>%
     mutate(gear_type_se2e = case_when(
         gear_type == midwater_trawl_sau_gears ~ "midwater trawl",
         gear_type %in% nets_sau_gears ~ "nets including small scale",
         gear_type %in% linefishery_sau_gears ~ "linefishery",
-        gear_type == small_lines_squidjig_sau_gears ~ "small scale lines / squid jig",
+        gear_type == squidjig_sau_gears ~ "squid jig",
         gear_type == longline_sau_gears ~ "longline",
         gear_type == purseseine_sau_gears ~ "purse seine",
         gear_type == demersal_trawl_sau_gears ~ "demersal trawl",
@@ -130,48 +134,60 @@ guild_gear_catch <- landings %>%
         # !gear_type %in% all_accounted_sau_gears & fishing_sector == "Subsistence" ~ "other subsistence",
         .default = "other gears"
     )) %>%
-    group_by(fishing_sector, gear_type_se2e, Guild) %>%
+    filter(!is.na(Guild) & year >= start_year & year <= end_year)
+
+# Redirect the `squid jig` landings that aren't squid to the linefishery
+for (r in seq_len(nrow(strath_e2e_gear_landings))){
+    row <- strath_e2e_gear_landings[r, ]
+    if (row$gear_type_se2e == "squid jig" && row$Guild != "Zooplankton carnivore"){
+        strath_e2e_gear_landings[r, ]$gear_type_se2e <- "linefishery"
+    }
+}
+
+guild_gear_catch <- strath_e2e_gear_landings %>%
+    group_by(gear_type_se2e, Guild) %>%
     summarise(tonnes = mean(tonnes)) %>%
     filter(gear_type_se2e != "other gears")
 
-# guild_gear_catch_other_gears <- guild_gear_catch[str_detect(guild_gear_catch$gear_type_se2e, "(other )"), ]
-# guild_gear_catch <- guild_gear_catch[!str_detect(guild_gear_catch$gear_type_se2e, "(other )"), ]
+    # guild_gear_catch_other_gears <- guild_gear_catch[str_detect(guild_gear_catch$gear_type_se2e, "(other )"), ]
+    # guild_gear_catch <- guild_gear_catch[!str_detect(guild_gear_catch$gear_type_se2e, "(other )"), ]
 
-# redistribute_unaccounted_gears <- function(guild_gear_df, original_gears, additional_gears, sector) {
-#     # guild_gear_df - dataframe containing the catch/discards data for all gear_type_se2e and all Guilds. I.e. expand.grid()
-#     # original_gears contains the gear and guild -wise tonnes for all accounted strath e2e gears.
-#     # additional_gears contains the gear and guild -wise tonnes for additional unaccounted SAU gears (e.g. "other Industrial")
+    # redistribute_unaccounted_gears <- function(guild_gear_df, original_gears, additional_gears, sector) {
+    #     # guild_gear_df - dataframe containing the catch/discards data for all gear_type_se2e and all Guilds. I.e. expand.grid()
+    #     # original_gears contains the gear and guild -wise tonnes for all accounted strath e2e gears.
+    #     # additional_gears contains the gear and guild -wise tonnes for additional unaccounted SAU gears (e.g. "other Industrial")
 
-#     contained_catch <- unique(original_gears[, c("fishing_sector", "gear_type_se2e")])
-#     additional_catch <- additional_gears[additional_gears$fishing_sector == sector, ]
-#     additional_catch <- additional_catch[!is.na(additional_catch$Guild), ]
+    #     contained_catch <- unique(original_gears[, c("fishing_sector", "gear_type_se2e")])
+    #     additional_catch <- additional_gears[additional_gears$fishing_sector == sector, ]
+    #     additional_catch <- additional_catch[!is.na(additional_catch$Guild), ]
 
-#     target_se2e_gears <- contained_catch[contained_catch$fishing_sector == sector, ]$gear_type_se2e
-#     n_target_se2e_gears <- length(target_se2e_gears)
+    #     target_se2e_gears <- contained_catch[contained_catch$fishing_sector == sector, ]$gear_type_se2e
+    #     n_target_se2e_gears <- length(target_se2e_gears)
 
-#     for (guild in additional_catch$Guild) {
-#         # Calculate the amount of additional-sector catch that should be redistributed to each of the existing StrathE2E gears of the target sector
-#         additional_guild_sector_catch_per_gear <- filter(additional_catch, Guild == guild)$tonnes / n_target_se2e_gears
+    #     for (guild in additional_catch$Guild) {
+    #         # Calculate the amount of additional-sector catch that should be redistributed to each of the existing StrathE2E gears of the target sector
+    #         additional_guild_sector_catch_per_gear <- filter(additional_catch, Guild == guild)$tonnes / n_target_se2e_gears
 
-#         for (t_gear in target_se2e_gears) {
-#             prior_catch <- guild_gear_df[guild_gear_df$Guild == guild & guild_gear_df$gear_type_se2e == t_gear, ]$tonnes
-#             prior_catch <- ifelse(is.na(prior_catch), 0, prior_catch)
+    #         for (t_gear in target_se2e_gears) {
+    #             prior_catch <- guild_gear_df[guild_gear_df$Guild == guild & guild_gear_df$gear_type_se2e == t_gear, ]$tonnes
+    #             prior_catch <- ifelse(is.na(prior_catch), 0, prior_catch)
 
-#             guild_gear_df[guild_gear_df$Guild == guild & guild_gear_df$gear_type_se2e == t_gear, ]$tonnes <- prior_catch + additional_guild_sector_catch_per_gear
-#         }
-#     }
+    #             guild_gear_df[guild_gear_df$Guild == guild & guild_gear_df$gear_type_se2e == t_gear, ]$tonnes <- prior_catch + additional_guild_sector_catch_per_gear
+    #         }
+    #     }
 
-#     return(guild_gear_df)
-# }
+    #     return(guild_gear_df)
+    # }
 
-# filter(gear_type_se2e != "other gears")
+    # filter(gear_type_se2e != "other gears")
 
-catch_matrix_data <- expand.grid(
-    Guild = strathe2e_guilds,
-    gear_type_se2e = strathe2e_gear_types
-) %>%
-    left_join(., guild_gear_catch[, c("gear_type_se2e", "Guild", "tonnes")], by = c("gear_type_se2e", "Guild")) %>%
-    filter(Guild != "NA" & Guild != "") # %>%
+    catch_matrix_data <- expand.grid(
+        Guild = strathe2e_guilds,
+        gear_type_se2e = strathe2e_gear_types
+    ) %>%
+        left_join(., guild_gear_catch[, c("gear_type_se2e", "Guild", "tonnes")], by = c("gear_type_se2e", "Guild")) %>%
+        filter(Guild != "NA" & Guild != "")
+} # %>%
 
 # Add longline (pelagic and longline) bird landings data (catch for birds from longlines are added to landings because birds are taken to port in this fishery)
 # Data values taken from Rollinson et al (2017). Patterns and trends in seabird bycatch in the pelagic longline fishery off South Africa
@@ -273,3 +289,12 @@ ggplot() +
 ggplot() +
     geom_tile(data = discards_matrix_data, aes(x = gear_type_se2e, y = Guild, fill = log(tonnes))) +
     scale_fill_viridis_c()
+
+ggplot() +
+    geom_area(
+        data = squid_jig_prop,
+        aes(x = year, y = proportion, fill = Guild),
+        color = "gray"
+    ) +
+    theme_minimal() +
+    labs(y = "proportion_of_landings")
