@@ -4,6 +4,7 @@ library(sf)
 library(tidyterra)
 library(exactextractr)
 source("./R scripts/fish/fisheries_data_functions.R")
+source("./R scripts/@_Region file.R")
 
 
 # Load habitat map
@@ -26,16 +27,43 @@ extract_habitat_data <- function(raster, habitats, fun, name) {
 #     }
 # }
 
-# Load Purse Seine fishing intensity data - need to acquire
+domain_rough_bound <- ext(lims)
+
 
 # Load Midwater Trawl intensity data - need to acquire demersal trawl data - hours of trawling
 mw_intensity <- "../../Spatial Data/fishing_effort_data/Midwater_Trawl_Intensity/Midwater_Trawl_Intensity/Midwater_Trawl_Intensity.tif"
-mw_intensity <- trim(rast(mw_intensity))
-mw_intensity <- as.numeric(mw_intensity)
+mw_intensity <- crop(rast(mw_intensity), domain_rough_bound)
 mw_intensity <- project(mw_intensity, "epsg:4326", method = "near") # Using nearest neighbour method because values are somewhat discrete
+mw_intensity <- crop(mw_intensity, habitats)
+mw_intensity <- as.numeric(mw_intensity)
 mw_intensity <- subst(mw_intensity, NA, 0) # Replace NA values with 0 because there is no fishing in that area.
 mw_data <- extract_habitat_data(mw_intensity, habitats, "mean", "midwater_trawl")
-# mw_data$coverage <- terra::extract(mw_intensity, habitats, fun = prop_covered)$OID
+mw_data$midwater_trawl <- ifelse(is.na(mw_data$midwater_trawl), 0, mw_data$midwater_trawl)
+mw_data <- mw_data %>% mutate(proportion = midwater_trawl / sum(midwater_trawl))
+
+ggplot() +
+    geom_spatraster(data = mw_intensity, aes(fill = OID)) +
+    geom_sf(data = habitats, aes(color = Habitat), alpha = 0.4) +
+    scale_fill_viridis_c()
+
+# Load spatial data for nets including small scale
+## Load Gillnets
+gn_intensity <- "../../Spatial Data/fishing_effort_data/Gill_Netting_Intensity/Gill_Net_Intensity/Gill_Net_Intensity.tif"
+gn_intensity <- trim(rast(gn_intensity))
+gn_intensity <- as.numeric(gn_intensity)
+gn_intensity <- project(gn_intensity, "epsg:4326", method = "near")
+gn_intensity <- subst(gn_intensity, NA, 0)
+gn_data <- extract_habitat_data(gn_intensity, habitats, "mean", "gill_nets")
+
+## Load beach seine nets
+bs_intensity <- "../../Spatial Data/fishing_effort_data/Beach_Seine_Intensity/Beach_seine_Intensity/Beach_Seine_Intensity.tif"
+bs_intensity <- trim(rast(bs_intensity))
+bs_intensity <- as.numeric(bs_intensity)
+bs_intensity <- project(bs_intensity, "epsg:4326", method = "near")
+bs_intensity <- subst(bs_intensity, NA, 0)
+bs_data <- extract_habitat_data(bs_intensity, habitats, "mean", "beach_seine")
+
+
 
 # Load pelagic longline - hooks/area
 pll_intensity <- "../../Spatial Data/fishing_effort_data/Pelagic_Longline_Intensity/Pelagic_Longline_Intensity/Pelagic_Longline_Intensity.tif"
