@@ -1,19 +1,73 @@
 library(ggplot2)
 library(terra)
 library(sf)
+library(glue)
+library(docstring)
 library(tidyterra)
 library(exactextractr)
 source("./R scripts/fish/fisheries_data_functions.R")
 source("./R scripts/@_Region file.R")
 
-
 # Load habitat map
 habitats <- readRDS("./Objects/Habitats.rds")
+
+# Load GFW effort data (hours)
+gfw_polygon_extraction <- function(file, polygons) {
+    #' Extracting GFW data for habitat polygons from GFW netcdf files.
+    #'
+    #' File takes a file name containing flag and GFW variable information.
+    #' Calculates the total hours for each year and habitat/shore type.
+    flag <- file %>%
+        str_split_i(pattern = "(?=[-])", i = 1) %>%
+        str_split_i(pattern = "(?<=[_])", i = 3)
+    variable <- file %>%
+        str_split_i(pattern = "([-])", i = 2) %>% # Split to get last section of file name
+        str_split_i(pattern = "([.])", i = 1)
+
+    extracted_data <- rast(glue("./Data/{file}")) %>% # Import a brick of all years
+        exact_extract(polygons, fun = "sum", append_cols = c("Habitat", "Shore")) %>% # Sum fishing hours within habitat types
+        pivot_longer(
+            cols = matches("\\d"),
+            names_to = "year",
+            values_to = "hours"
+        ) %>%
+        mutate(year = as.numeric(str_split_i(year, "(?<=[=])", i = 2))) %>%
+        mutate(variable = glue("{flag}_{variable}")) %>%
+        select(c(Habitat, Shore, year, variable, hours))
+
+    return(extracted_data)
+}
+
+nc_files <- list.files("./Data/", pattern = ".nc")
+# Extract the total yearly effort in hours for each habitat/shore area and variable
+extracted_data <- map(
+    nc_files,
+    function(x) gfw_polygon_extraction(x, habitats)
+)
+# For each variable, calculate the proportion of effort distributed to each habitat/shore type
+gfw_data <- rbindlist(extracted_data) %>%
+    group_by(variable, Habitat, Shore) %>%
+    summarise(hours = mean(hours)) # %>%
+# group_by(variable) %>%
+# mutate(proportion = hours / sum(hours))
 
 extract_habitat_data <- function(raster, habitats, fun, name) {
     extracted <- raster %>%
         exact_extract(habitats, fun = fun, append_cols = c("Habitat", "Shore")) %>% # Sum fishing hours within habitat types
         rename(!!name := fun)
+
+    return(extracted)
+}
+
+sanbi_proportion_effort <- function(raster_fn, habitats, fun, name) {
+    raster <- project(rast(raster_fn), "epsg:4326", method = "near") # Using nearest neighbour method because values are somewhat discrete
+    raster <- crop(raster, habitats)
+    raster <- as.numeric(raster)
+    raster <- subst(raster, 0, NA) # Replace NA values with 0 because there is no fishing in that area.
+
+    extracted <- extract_habitat_data(raster, habitats, fun, name)
+    extracted[, name] <- ifelse(is.na(extracted[, name]), 0, extracted[, name])
+    extracted <- extracted %>% mutate("proportion_{name}" := .[, name] / sum(.[, name]))
 
     return(extracted)
 }
@@ -29,40 +83,73 @@ extract_habitat_data <- function(raster, habitats, fun, name) {
 
 domain_rough_bound <- ext(lims)
 
-
 # Load Midwater Trawl intensity data - need to acquire demersal trawl data - hours of trawling
-mw_intensity <- "../../Spatial Data/fishing_effort_data/Midwater_Trawl_Intensity/Midwater_Trawl_Intensity/Midwater_Trawl_Intensity.tif"
-mw_intensity <- project(rast(mw_intensity), "epsg:4326", method = "near") # Using nearest neighbour method because values are somewhat discrete
-mw_intensity <- crop(mw_intensity, habitats)
-mw_intensity <- as.numeric(mw_intensity)
-mw_intensity <- subst(mw_intensity, 0, NA) # Replace NA values with 0 because there is no fishing in that area.
-mw_data <- extract_habitat_data(mw_intensity, habitats, "mean", "midwater_trawl")
-mw_data$midwater_trawl <- ifelse(is.na(mw_data$midwater_trawl), 0, mw_data$midwater_trawl)
-mw_data <- mw_data %>% mutate(proportion = midwater_trawl / sum(midwater_trawl))
+mw_data <- sanbi_proportion_effort(
+    "../../Spatial Data/fishing_effort_data/Midwater_Trawl_Intensity/Midwater_Trawl_Intensity/Midwater_Trawl_Intensity.tif",
+    habitats,
+    "sum",
+    "midwater_trawl"
+)
 
 ggplot() +
-    # geom_spatraster(data = mw_intensity, aes(fill = OID)) +
-    geom_sf(data = habitats[habitats$Habitat == "sand" & habitats$Shore == "Offshore", ], aes(color = Habitat), alpha = 0.4, fill = "black")
-# scale_fill_viridis_c()
+    geom_spatraster(data = mw_intensity, aes(fill = OID)) +
+    geom_sf(data = habitats, aes(color = Habitat), alpha = 0.4)
+scale_fill_viridis_c()
 
 # Load spatial data for nets including small scale
 ## Load Gillnets
 gn_intensity <- "../../Spatial Data/fishing_effort_data/Gill_Netting_Intensity/Gill_Net_Intensity/Gill_Net_Intensity.tif"
-gn_intensity <- trim(rast(gn_intensity))
+gn_intensity <- project(rast(gn_intensity), "epsg:4326", method = "near") # Using nearest neighbour method because values are somewhat discrete
+gn_intensity <- crop(gn_intensity, habitats)
 gn_intensity <- as.numeric(gn_intensity)
-gn_intensity <- project(gn_intensity, "epsg:4326", method = "near")
-gn_intensity <- subst(gn_intensity, NA, 0)
-gn_data <- extract_habitat_data(gn_intensity, habitats, "mean", "gill_nets")
+gn_intensity <- subst(gn_intensity, NA, 0) # Set missing values to 0 intermediately to add beach seine data
 
 ## Load beach seine nets
 bs_intensity <- "../../Spatial Data/fishing_effort_data/Beach_Seine_Intensity/Beach_seine_Intensity/Beach_Seine_Intensity.tif"
-bs_intensity <- trim(rast(bs_intensity))
+bs_intensity <- project(rast(bs_intensity), "epsg:4326", method = "near") # Using nearest neighbour method because values are somewhat discrete
+bs_intensity <- crop(bs_intensity, habitats)
 bs_intensity <- as.numeric(bs_intensity)
-bs_intensity <- project(bs_intensity, "epsg:4326", method = "near")
-bs_intensity <- subst(bs_intensity, NA, 0)
-bs_data <- extract_habitat_data(bs_intensity, habitats, "mean", "beach_seine")
+bs_intensity <- subst(bs_intensity, NA, 0) # Set missing values to 0 intermediately to add gillnet data
 
+net_intensity <- gn_intensity + bs_intensity
+net_intensity <- subst(net_intensity, 0, NA) # Set 0 values to NA to just extract from regions with effort.
+net_data <- extract_habitat_data(net_intensity, habitats, "sum", "nets")
+net_data$nets <- ifelse(is.na(net_data$nets), 0, net_data$nets)
+net_data <- net_data %>% mutate(proportion_nets := nets / sum(nets))
 
+ggplot() +
+    geom_spatraster(data = net_intensity, aes(fill = OID)) +
+    geom_sf(data = habitats, aes(color = Habitat), alpha = 0.4) +
+    scale_fill_viridis_c()
+
+# Extract Squid Jig data
+sj_data <- sanbi_proportion_effort(
+    "../../Spatial Data/fishing_effort_data/Squid_Jig_Intensity/Squid_Jig_Intensity/Squid_Jig_Intensity.tif",
+    habitats,
+    "sum",
+    "squid_jig"
+)
+
+# Extract Linefishery data
+lf_data <- sanbi_proportion_effort(
+    "../../Spatial Data/fishing_effort_data/Linefish_Intensity/Linefish_Intensity/Linfish_Intensity.tif",
+    habitats,
+    "sum",
+    "linefishery"
+)
+
+# Collate pelagic and demersal longline data from GFW
+
+# Collate purse seine data from GFW
+
+# Extract Demersal Trawl data (not available from SANBI yet)
+# Need to confirm the format and values of the data are similar to the other SANBI layers
+dt_data <- sanbi_proportion_effort(
+    "../../Spatial Data/fishing_effort_data/Demersal_Trawl_Intensity/Demersal_Trawl_Intensity.tif",
+    habitats,
+    "sum",
+    "demersal_trawl"
+)
 
 # Load pelagic longline - hooks/area
 pll_intensity <- "../../Spatial Data/fishing_effort_data/Pelagic_Longline_Intensity/Pelagic_Longline_Intensity/Pelagic_Longline_Intensity.tif"
