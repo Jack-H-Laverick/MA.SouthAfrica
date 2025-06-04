@@ -95,14 +95,15 @@ arrow::write_parquet(discards, "./Objects/sau_discards_assigned_guilds.parq")
 strathe2e_gear_types <- c(
     "midwater trawl",
     "nets including small scale",
-    "linefishery",
+    "pole and line",
     "squid jig",
     "longline",
     "purse seine",
     "demersal trawl",
     "WC Rock Lobster traps",
     "recreational fishing gear",
-    "small scale lines"
+    "small scale lines",
+    "subsistence fishing gear"
 )
 strathe2e_guilds <- unique(known_species$Guild)
 midwater_trawl_sau_gears <- "pelagic trawl"
@@ -115,26 +116,28 @@ nets_sau_gears <- c(
     "small scale other nets",
     "gillnet"
 )
-linefishery_sau_gears <- c("hand lines", "pole and line")
+pole_and_line_sau_gears <- "pole and line"
 squidjig_sau_gears <- "squid jig"
 longline_sau_gears <- "longline"
 purseseine_sau_gears <- "purse seine"
 demersal_trawl_sau_gears <- "bottom trawl"
 wc_rock_lobster_sau_gears <- "WC Rock Lobster traps"
 recreational_sau_gears <- "recreational fishing gear"
-small_scale_lines_sau_gears <- "small scale lines"
+small_scale_lines_sau_gears <- c("small scale lines", "hand lines")
+subsistence_sau_gears <- "subsistence fishing gear"
 
 all_accounted_sau_gears <- c(
     midwater_trawl_sau_gears,
     nets_sau_gears,
-    linefishery_sau_gears,
+    pole_and_line_sau_gears,
     squidjig_sau_gears,
     longline_sau_gears,
     purseseine_sau_gears,
     demersal_trawl_sau_gears,
     wc_rock_lobster_sau_gears,
     recreational_sau_gears,
-    small_scale_lines_sau_gears
+    small_scale_lines_sau_gears,
+    subsistence_sau_gears
 )
 
 for (r in seq_len(nrow(landings))) {
@@ -158,14 +161,15 @@ strath_e2e_gear_landings <- landings %>%
     mutate(gear_type_se2e = case_when(
         gear_type == midwater_trawl_sau_gears ~ "midwater trawl",
         gear_type %in% nets_sau_gears ~ "nets including small scale",
-        gear_type %in% linefishery_sau_gears ~ "linefishery",
+        gear_type %in% pole_and_line_sau_gears ~ "pole and line",
         gear_type == squidjig_sau_gears ~ "squid jig",
         gear_type == longline_sau_gears ~ "longline",
         gear_type == purseseine_sau_gears ~ "purse seine",
         gear_type == demersal_trawl_sau_gears ~ "demersal trawl",
         gear_type == wc_rock_lobster_sau_gears ~ "WC Rock Lobster traps",
         gear_type == recreational_sau_gears ~ "recreational fishing gear",
-        gear_type == small_scale_lines_sau_gears ~ "small scale lines",
+        gear_type %in% small_scale_lines_sau_gears ~ "small scale lines",
+        gear_type == subsistence_sau_gears ~ "subsistence fishing gear",
         # !gear_type %in% all_accounted_sau_gears & fishing_sector == "Industrial" ~ "other industrial",
         # !gear_type %in% all_accounted_sau_gears & fishing_sector == "Artisanal" ~ "other artisinal",
         # !gear_type %in% all_accounted_sau_gears & fishing_sector == "Subsistence" ~ "other subsistence",
@@ -225,7 +229,8 @@ guild_gear_discards <- discards %>%
         gear_type == demersal_trawl_sau_gears ~ "demersal trawl",
         gear_type == wc_rock_lobster_sau_gears ~ "WC Rock Lobster traps",
         gear_type == recreational_sau_gears ~ "recreational fishing gear",
-        gear_type == small_scale_lines_sau_gears ~ "small scale lines",
+        gear_type %in% small_scale_lines_sau_gears ~ "small scale lines",
+        gear_type == subsistence_sau_gears ~ "subsistence fishing gear",
         # !gear_type %in% all_accounted_sau_gears & fishing_sector == "Industrial" ~ "other industrial",
         # !gear_type %in% all_accounted_sau_gears & fishing_sector == "Artisanal" ~ "other artisinal",
         # !gear_type %in% all_accounted_sau_gears & fishing_sector == "Subsistence" ~ "other subsistence",
