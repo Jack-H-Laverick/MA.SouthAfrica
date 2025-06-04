@@ -100,7 +100,9 @@ strathe2e_gear_types <- c(
     "longline",
     "purse seine",
     "demersal trawl",
-    "WC Rock Lobster traps"
+    "WC Rock Lobster traps",
+    "recreational fishing gear",
+    "small scale lines"
 )
 strathe2e_guilds <- unique(known_species$Guild)
 midwater_trawl_sau_gears <- "pelagic trawl"
@@ -113,22 +115,41 @@ nets_sau_gears <- c(
     "small scale other nets",
     "gillnet"
 )
-linefishery_sau_gears <- c("hand lines", "pole and line", "recreational fishing gear")
-squidjig_sau_gears <- "small scale lines"
+linefishery_sau_gears <- c("hand lines", "pole and line")
+squidjig_sau_gears <- "squid jig"
 longline_sau_gears <- "longline"
 purseseine_sau_gears <- "purse seine"
 demersal_trawl_sau_gears <- "bottom trawl"
 wc_rock_lobster_sau_gears <- "WC Rock Lobster traps"
+recreational_sau_gears <- "recreational fishing gear"
+small_scale_lines_sau_gears <- "small scale lines"
 
-all_accounted_sau_gears <- c(midwater_trawl_sau_gears, nets_sau_gears, linefishery_sau_gears, squidjig_sau_gears, longline_sau_gears, purseseine_sau_gears, demersal_trawl_sau_gears, wc_rock_lobster_sau_gears)
+all_accounted_sau_gears <- c(
+    midwater_trawl_sau_gears,
+    nets_sau_gears,
+    linefishery_sau_gears,
+    squidjig_sau_gears,
+    longline_sau_gears,
+    purseseine_sau_gears,
+    demersal_trawl_sau_gears,
+    wc_rock_lobster_sau_gears,
+    recreational_sau_gears,
+    small_scale_lines_sau_gears
+)
 
-# Redirect the `unknown class` landings that are WC Rock Lobster to a WC Rock Lobster fishery
-# Bycatch is not an issue in this industrial fishery (Status Report, 2023), so all of these landings
-# Can be attributed to a new fishery using traps in rocky areas of 100m+.
 for (r in seq_len(nrow(landings))) {
     row <- landings[r, ]
+    # Redirect the `unknown class` landings that are WC Rock Lobster to a WC Rock Lobster fishery
+    # Bycatch is not an issue in this industrial fishery (Status Report, 2023), so all of these landings
+    # Can be attributed to a new fishery using traps in rocky areas of 100m+.
     if (row$gear_type == "unknown class" && row$scientific_name == "Jasus lalandii") {
         landings[r, ]$gear_type <- "WC Rock Lobster traps"
+    }
+
+    # Redirect the `small scale lines` landings that are squid to a `squid jig` gear type.
+    # Bycatch is not an issue in the squid jig gear type due to the high selectivity of squid jigs
+    if (row$gear_type == "small scale lines" && !is.na(row$Guild) && row$Guild == "Zooplankton carnivore") {
+        landings[r, ]$gear_type <- "squid jig"
     }
 }
 
@@ -143,6 +164,8 @@ strath_e2e_gear_landings <- landings %>%
         gear_type == purseseine_sau_gears ~ "purse seine",
         gear_type == demersal_trawl_sau_gears ~ "demersal trawl",
         gear_type == wc_rock_lobster_sau_gears ~ "WC Rock Lobster traps",
+        gear_type == recreational_sau_gears ~ "recreational fishing gear",
+        gear_type == small_scale_lines_sau_gears ~ "small scale lines",
         # !gear_type %in% all_accounted_sau_gears & fishing_sector == "Industrial" ~ "other industrial",
         # !gear_type %in% all_accounted_sau_gears & fishing_sector == "Artisanal" ~ "other artisinal",
         # !gear_type %in% all_accounted_sau_gears & fishing_sector == "Subsistence" ~ "other subsistence",
@@ -150,13 +173,6 @@ strath_e2e_gear_landings <- landings %>%
     )) %>%
     filter(!is.na(Guild) & year >= start_year & year <= end_year)
 
-# Redirect the `squid jig` landings that aren't squid to the linefishery
-for (r in seq_len(nrow(strath_e2e_gear_landings))) {
-    row <- strath_e2e_gear_landings[r, ]
-    if (row$gear_type_se2e == "squid jig" && row$Guild != "Zooplankton carnivore") {
-        strath_e2e_gear_landings[r, ]$gear_type_se2e <- "linefishery"
-    }
-}
 
 guild_gear_catch <- strath_e2e_gear_landings %>%
     group_by(gear_type_se2e, Guild) %>%
@@ -169,7 +185,6 @@ catch_matrix_data <- expand.grid(
 ) %>%
     left_join(., guild_gear_catch[, c("gear_type_se2e", "Guild", "tonnes")], by = c("gear_type_se2e", "Guild")) %>%
     filter(Guild != "NA" & Guild != "")
-
 
 # Add longline (pelagic and longline) bird landings data (catch for birds from longlines are added to landings because birds are taken to port in this fishery)
 # Data values taken from Rollinson et al (2017). Patterns and trends in seabird bycatch in the pelagic longline fishery off South Africa
@@ -209,6 +224,8 @@ guild_gear_discards <- discards %>%
         gear_type == purseseine_sau_gears ~ "purse seine",
         gear_type == demersal_trawl_sau_gears ~ "demersal trawl",
         gear_type == wc_rock_lobster_sau_gears ~ "WC Rock Lobster traps",
+        gear_type == recreational_sau_gears ~ "recreational fishing gear",
+        gear_type == small_scale_lines_sau_gears ~ "small scale lines",
         # !gear_type %in% all_accounted_sau_gears & fishing_sector == "Industrial" ~ "other industrial",
         # !gear_type %in% all_accounted_sau_gears & fishing_sector == "Artisanal" ~ "other artisinal",
         # !gear_type %in% all_accounted_sau_gears & fishing_sector == "Subsistence" ~ "other subsistence",
