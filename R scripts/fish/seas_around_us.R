@@ -3,6 +3,7 @@ library(ggplot2)
 library(gganimate)
 library(randomcoloR)
 library(terra)
+library(blogdown)
 
 check_species_match <- function(string_i, strings) {
     if (string_i %in% strings) { # Check if the string occurs in the vector of strings
@@ -98,7 +99,8 @@ strathe2e_gear_types <- c(
     "squid jig",
     "longline",
     "purse seine",
-    "demersal trawl"
+    "demersal trawl",
+    "WC Rock Lobster traps"
 )
 strathe2e_guilds <- unique(known_species$Guild)
 midwater_trawl_sau_gears <- "pelagic trawl"
@@ -116,8 +118,19 @@ squidjig_sau_gears <- "small scale lines"
 longline_sau_gears <- "longline"
 purseseine_sau_gears <- "purse seine"
 demersal_trawl_sau_gears <- "bottom trawl"
+wc_rock_lobster_sau_gears <- "WC Rock Lobster traps"
 
-all_accounted_sau_gears <- c(midwater_trawl_sau_gears, nets_sau_gears, linefishery_sau_gears, small_lines_squidjig_sau_gears, longline_sau_gears, purseseine_sau_gears, demersal_trawl_sau_gears)
+all_accounted_sau_gears <- c(midwater_trawl_sau_gears, nets_sau_gears, linefishery_sau_gears, squidjig_sau_gears, longline_sau_gears, purseseine_sau_gears, demersal_trawl_sau_gears, wc_rock_lobster_sau_gears)
+
+# Redirect the `unknown class` landings that are WC Rock Lobster to a WC Rock Lobster fishery
+# Bycatch is not an issue in this industrial fishery (Status Report, 2023), so all of these landings
+# Can be attributed to a new fishery using traps in rocky areas of 100m+.
+for (r in seq_len(nrow(landings))) {
+    row <- landings[r, ]
+    if (row$gear_type == "unknown class" && row$scientific_name == "Jasus lalandii") {
+        landings[r, ]$gear_type <- "WC Rock Lobster traps"
+    }
+}
 
 # Landings by StrathE2E gear type and guild
 strath_e2e_gear_landings <- landings %>%
@@ -129,6 +142,7 @@ strath_e2e_gear_landings <- landings %>%
         gear_type == longline_sau_gears ~ "longline",
         gear_type == purseseine_sau_gears ~ "purse seine",
         gear_type == demersal_trawl_sau_gears ~ "demersal trawl",
+        gear_type == wc_rock_lobster_sau_gears ~ "WC Rock Lobster traps",
         # !gear_type %in% all_accounted_sau_gears & fishing_sector == "Industrial" ~ "other industrial",
         # !gear_type %in% all_accounted_sau_gears & fishing_sector == "Artisanal" ~ "other artisinal",
         # !gear_type %in% all_accounted_sau_gears & fishing_sector == "Subsistence" ~ "other subsistence",
@@ -190,10 +204,11 @@ guild_gear_discards <- discards %>%
         gear_type == midwater_trawl_sau_gears ~ "midwater trawl",
         gear_type %in% nets_sau_gears ~ "nets including small scale",
         gear_type %in% linefishery_sau_gears ~ "linefishery",
-        gear_type == small_lines_squidjig_sau_gears ~ "small scale lines / squid jig",
+        gear_type == squidjig_sau_gears ~ "squid jig",
         gear_type == longline_sau_gears ~ "longline",
         gear_type == purseseine_sau_gears ~ "purse seine",
         gear_type == demersal_trawl_sau_gears ~ "demersal trawl",
+        gear_type == wc_rock_lobster_sau_gears ~ "WC Rock Lobster traps",
         # !gear_type %in% all_accounted_sau_gears & fishing_sector == "Industrial" ~ "other industrial",
         # !gear_type %in% all_accounted_sau_gears & fishing_sector == "Artisanal" ~ "other artisinal",
         # !gear_type %in% all_accounted_sau_gears & fishing_sector == "Subsistence" ~ "other subsistence",
