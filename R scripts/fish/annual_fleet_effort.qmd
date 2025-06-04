@@ -1,0 +1,34 @@
+---
+title: "Compiling annual fishing fleet effort data"
+format:
+    html:
+        fig-width: 10
+        fig-height: 5
+        code-fold: true
+        dpi: 400
+        toc: true
+        toc-depth: 2
+        embed-resources: true
+---
+
+```{r setup and load data, include=FALSE}
+packages <- c("ggplot2", "arrow", "tidyverse", "glue", "tabulapdf", "gganimate", "randomcoloR")
+sapply(packages, library, character.only = TRUE)
+options(dplyr.summarise.inform = FALSE)
+```
+
+# Midwater Trawl
+
+# Nets including small scale
+
+# Linefishery
+
+# Squid jig
+
+# Longlines
+
+# Purse Seine
+
+# Demersal Trawl
+
+# West Coast Rock Lobster traps
