@@ -152,21 +152,10 @@ lf_intensity <- format_sanbi_raster(
     "../../Spatial Data/fishing_effort_data/Linefish_Intensity/Linefish_Intensity/Linefish_Intensity.tif",
     habitats
 )
-lf_intensity <- subst(lf_intensity, NA, 0) # Set missing values to 0 intermediately to add recreational data
-
-## Load Recreational Fishing intensity
-rf_intensity <- format_sanbi_raster(
-    "../../Spatial Data/fishing_effort_data/Recreational_Shore_Fishing_Intensity/Recreational_Shore_Fishing_Intensity/Recreational_Shore_Fishing_Intensity.tif",
-    habitats
-)
-rf_intensity <- subst(rf_intensity, NA, 0) # Set missing values to 0 intermediately to add linefishery data
-
-overall_lf_intensity <- lf_intensity + rf_intensity
-overall_lf_intensity <- subst(overall_lf_intensity, 0, NA) # Set 0 values to NA to just extract from regions with effort.
 lf_data <- sanbi_proportion_effort(overall_lf_intensity, habitats, "sum", "linefishery")
 
 ggplot() +
-    geom_spatraster(data = overall_lf_intensity, aes(fill = OID)) +
+    geom_spatraster(data = lf_intensity, aes(fill = OID)) +
     geom_sf(data = habitats, aes(color = Habitat), alpha = 0.4) +
     scale_fill_viridis_c()
 
@@ -213,6 +202,9 @@ ggplot() +
     geom_sf(data = habitats, aes(color = Habitat), alpha = 0.4) +
     scale_fill_viridis_c()
 
+# Extract recreational fishing gear spatial effort data
+
+# Extract small scale lines spatial effort data
 
 
 
