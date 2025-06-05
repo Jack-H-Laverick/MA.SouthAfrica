@@ -131,6 +131,9 @@ ggplot() +
     geom_sf(data = habitats, aes(color = Habitat), alpha = 0.4) +
     scale_fill_viridis_c()
 
+# Extract Pole and Line data
+
+
 # Extract Squid Jig data
 sj_intensity <- format_sanbi_raster(
     "../../Spatial Data/fishing_effort_data/Squid_Intensity/Squid_Intensity/Squid_Fishery_Intensity.tif",
@@ -144,18 +147,6 @@ sj_data <- sanbi_proportion_effort(
 )
 ggplot() +
     geom_spatraster(data = sj_intensity, aes(fill = OID)) +
-    geom_sf(data = habitats, aes(color = Habitat), alpha = 0.4) +
-    scale_fill_viridis_c()
-
-# Extract Linefishery data
-lf_intensity <- format_sanbi_raster(
-    "../../Spatial Data/fishing_effort_data/Linefish_Intensity/Linefish_Intensity/Linefish_Intensity.tif",
-    habitats
-)
-lf_data <- sanbi_proportion_effort(overall_lf_intensity, habitats, "sum", "linefishery")
-
-ggplot() +
-    geom_spatraster(data = lf_intensity, aes(fill = OID)) +
     geom_sf(data = habitats, aes(color = Habitat), alpha = 0.4) +
     scale_fill_viridis_c()
 
@@ -203,8 +194,54 @@ ggplot() +
     scale_fill_viridis_c()
 
 # Extract recreational fishing gear spatial effort data
+# Combination of linefishery spatial effort and recreational-shore based effort
+rlf_intensity <- format_sanbi_raster(
+    "../../Spatial Data/fishing_effort_data/Linefish_Intensity/Linefish_Intensity/Linefish_Intensity.tif",
+    habitats
+)
+rlf_intensity <- subst(rlf_intensity, NA, 0)
+
+rsb_intensity <- format_sanbi_raster(
+    "../../Spatial Data/fishing_effort_data/Recreational_Shore_Fishing_Intensity/Recreational_Shore_Fishing_Intensity/Recreational_Shore_Fishing_Intensity.tif",
+    habitats
+)
+rsb_intensity <- subst(rsb_intensity, NA, 0)
+
+rec_intensity <- rlf_intensity + rsb_intensity
+rec_intensity <- subst(rec_intensity, 0, NA)
+rec_data <- sanbi_proportion_effort(
+    rec_intensity, habitats,
+    "sum",
+    "recreational_fishing_gears"
+)
 
 # Extract small scale lines spatial effort data
+ssl_intensity <- format_sanbi_raster(
+    "../../Spatial Data/fishing_effort_data/Linefish_Intensity/Linefish_Intensity/Linefish_Intensity.tif",
+    habitats
+)
+ssl_data <- sanbi_proportion_effort(
+    ssl_intensity,
+    habitats,
+    "sum",
+    "small_scale_lines"
+)
+ggplot() +
+    geom_spatraster(data = ssl_intensity, aes(fill = OID)) +
+    geom_sf(data = habitats, aes(color = Habitat), alpha = 0.4) +
+    scale_fill_viridis_c()
+
+# Extract subsistence fishing gear spatial effort data
+ssf_intensity <- format_sanbi_raster(
+    "../../Spatial Data/fishing_effort_data/Subsistence_Fishing_Intensity/Subsistence_Fishing_Intensity.tif",
+    habitats
+)
+ssf_data <- sanbi_proportion_effort(
+    ssf_intensity,
+    habitats,
+    "sum",
+    "subsistence_fishing_gear"
+)
 
 
 
