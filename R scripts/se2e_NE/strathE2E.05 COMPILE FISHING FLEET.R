@@ -5,39 +5,74 @@ source("./R scripts/@_Region file.R")
 source("./R scripts/@_model_config.R")
 
 # Copy ready fishing activity file
-file.copy(
-    from = str_glue("./Objects/fishing_activity_{implementation}_{start_year}-{end_year}.csv"),
-    to = str_glue("./StrathE2E/{implementation}/2010-2019/Param/fishing_activity_{toupper(implementation)}_{start_year}-{end_year}.csv"),
-    overwrite = TRUE
-)
+activity <- read.csv(str_glue("./Objects/fishing_activity_{implementation}_{start_year}-{end_year}.csv"))
+if (nrow(activity) < 12) {
+    missing_rows <- 12 - nrow(activity)
+    activity <- rbind(
+        activity,
+        setNames(
+            data.frame(matrix(NA, ncol = ncol(activity), nrow = missing_rows)),
+            colnames(activity)
+        )
+    )
+}
+write.csv(activity, str_glue("./StrathE2E/{implementation}/2010-2019/Param/fishing_activity_{toupper(implementation)}_{start_year}-{end_year}.csv"), row.names = FALSE)
 
 # Copy fishing distribution file
-file.copy(
-    from = str_glue("./Objects/fishing_distribution_{implementation}_{start_year}-{end_year}.csv"),
-    to = str_glue("./StrathE2E/{implementation}/2010-2019/Param/fishing_distribution_{toupper(implementation)}_{start_year}-{end_year}.csv"),
-    overwrite = TRUE
-)
+distribution <- read.csv(str_glue("./Objects/fishing_distribution_{implementation}_{start_year}-{end_year}.csv"))
+if (nrow(distribution) < 12) {
+    missing_rows <- 12 - nrow(distribution)
+    distribution <- rbind(
+        distribution,
+        setNames(
+            data.frame(matrix(NA, ncol = ncol(distribution), nrow = missing_rows)),
+            colnames(distribution)
+        )
+    )
+}
+write.csv(distribution, str_glue("./StrathE2E/{implementation}/2010-2019/Param/fishing_distribution_{toupper(implementation)}_{start_year}-{end_year}.csv"), row.names = FALSE)
 
 # Copy fishing power
-file.copy(
-    from = str_glue("./Objects/fishing_power_{implementation}_{start_year}-{end_year}.csv"),
-    to = str_glue("./StrathE2E/{implementation}/2010-2019/Param/fishing_power_{toupper(implementation)}_{start_year}-{end_year}.csv"),
-    overwrite = TRUE
-)
+power <- read.csv(str_glue("./Objects/fishing_power_{implementation}_{start_year}-{end_year}.csv"))
+if (nrow(power) < 12) {
+    missing_rows <- 12 - nrow(power)
+    power <- rbind(
+        power,
+        setNames(
+            data.frame(matrix(NA, ncol = ncol(power), nrow = missing_rows)),
+            colnames(power)
+        )
+    )
+}
+write.csv(power, str_glue("./StrathE2E/{implementation}/2010-2019/Param/fishing_power_{toupper(implementation)}_{start_year}-{end_year}.csv"), row.names = FALSE)
 
 # Copy fishing discards
-file.copy(
-    from = str_glue("./Objects/fishing_discards_{implementation}_{start_year}-{end_year}.csv"),
-    to = str_glue("./StrathE2E/{implementation}/2010-2019/Param/fishing_discards_{toupper(implementation)}_{start_year}-{end_year}.csv"),
-    overwrite = TRUE
-)
+discards <- read.csv(str_glue("./Objects/fishing_discards_{implementation}_{start_year}-{end_year}.csv"))
+if (nrow(discards) < 12) {
+    missing_rows <- 12 - nrow(discards)
+    discards <- rbind(
+        discards,
+        setNames(
+            data.frame(matrix(NA, ncol = ncol(discards), nrow = missing_rows)),
+            colnames(discards)
+        )
+    )
+}
+write.csv(discards, str_glue("./StrathE2E/{implementation}/2010-2019/Param/fishing_discards_{toupper(implementation)}_{start_year}-{end_year}.csv"), row.names = FALSE)
 
 # Copy fishing processing
-file.copy(
-    from = str_glue("./Objects/fishing_processing_{implementation}_{start_year}-{end_year}.csv"),
-    to = str_glue("./StrathE2E/{implementation}/2010-2019/Param/fishing_processing_{toupper(implementation)}_{start_year}-{end_year}.csv"),
-    overwrite = TRUE
-)
+processing <- read.csv(str_glue("./Objects/fishing_processing_{implementation}_{start_year}-{end_year}.csv"))
+if (nrow(processing) < 12) {
+    missing_rows <- 12 - nrow(processing)
+    processing <- rbind(
+        processing,
+        setNames(
+            data.frame(matrix(NA, ncol = ncol(processing), nrow = missing_rows)),
+            colnames(processing)
+        )
+    )
+}
+write.csv(processing, str_glue("./StrathE2E/{implementation}/2010-2019/Param/fishing_processing_{toupper(implementation)}_{start_year}-{end_year}.csv"), row.names = FALSE)
 
 # Create fishing gear linkage file for our gears
 fishing_gear_linkage <- data.frame(
