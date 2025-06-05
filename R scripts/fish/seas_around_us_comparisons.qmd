@@ -12,6 +12,9 @@ format:
 ---
 
 ```{r setup and load data, include=FALSE}
+# To use tabulapdf package you need to install rJava and have Java path set in JAVA_HOME. For example: use the command `Sys.setenv(JAVA_HOME="C:/Program Files/Microsoft/jdk-21.0.7.6-hotspot")` to specify Java installation location.
+Sys.setenv(JAVA_HOME="C:/Program Files/Microsoft/jdk-21.0.7.6-hotspot")
+
 packages <- c("ggplot2", "arrow", "tidyverse", "glue", "tabulapdf", "gganimate", "randomcoloR")
 sapply(packages, library, character.only = TRUE)
 options(dplyr.summarise.inform = FALSE)
@@ -21,6 +24,7 @@ landings <- landings[!is.na(landings$Guild), ] # Keep only species previously as
 sau_species <- unique(landings$scientific_name)
 
 discards <- read_parquet("../../Objects/sau_discards_assigned_guilds.parq")
+se2e_gear_landings <- read_parquet("../../Objects/sau_landings_strath_gears.parq")
 
 # species <- c("agulhas_sole", "cape_hakes", "cape_horse_mackerel", "monkfish", "small_pelagic_fish", "squids", "soupfin_and_smoothhound")
 # input_images <- sapply(species, function(x) glue("../../Objects/{x}_stock_status_2023.png"))
@@ -340,7 +344,7 @@ Kelp data is not included in SAU data, but is recorded as \~5,000 tonnes of kelp
 
 # Seas Around Us gear-type distribution versus selected gears
 
-The proposed gear types for South Africa StrathE2E implementation are:
+The proposed gear types for South Africa StrathE2E implementation were:
 
 -   Purse seine
 -   demersal trawl (inshore + offshore) + midwater trawl
@@ -348,6 +352,20 @@ The proposed gear types for South Africa StrathE2E implementation are:
 -   squid jig
 -   pelagic longline
 -   demersal longline (elasmobranch + hake)
+
+Based on the data from Seas Around Us, possible gear types could be:
+
+-   Midwater trawl
+-   Demersal trawl
+-   Pole and line (migratory fish)
+-   Squid jig
+-   Longline (SAU does not separate pelagic and demersal)
+-   Purse seine
+-   West Coast Rock Lobster traps
+-   Recreational fishing gear
+-   Small scale lines (roughly corresponds to the South African traditional linefishery)
+-   Subsistence fishing gears
+-   Nets (includes gillnets, beach seine, small scale nets etc.)
 
 ## Looking at the distribution of landings across gear types in SAU data
 
@@ -405,30 +423,34 @@ ggplot() +
 To compare landings more closely with chosen gear types (above) SAU landings have been collated to approximate these gear types. (Note that a pelagic and a demersal longline class are separate in our proposed gear types, but SAU data only has 'longline' (these could be split by Guild caught possibly). And there is no squid jig gear type in SAU data so this label has been given to 'small scale lines' as this is the gear type catching *Loligo* squid in SAU data.):
 
 -   `nets including small scale` =\> bagnets, castnets, small scale gillnets, small scale encircling nets, small scale seine nets, small scale other nets, gillnets
--   `demersal + midwater trawl` =\> pelagic trawl, bottom trawl
--   `linefishery` =\> handlines, pole and lines, recreational fishing gear
--   `small scale lines / squid jig` =\> small scale lines
+-   `midwater trawl` =\> pelagic trawl
+-   `pole and line` =\> pole and lines
+-   `squid jig` =\> squid jig *
 -   `longline` =\> longline
 -   `purse seine` =\> purse seine
--   `other gears` =\> harpoon, small scale pots or traps, subsistence fishing gear, unknown class, hand or tools, unknown by source, artisinal fishing gear
+-   `demersal trawl` =\> bottom trawl
+-   `WC Rock Lobster traps` =\> WC Rock Lobster traps *
+-   `recreational fishing gears` =\> recreational fishing gears
+-   `small scale lines` => small scale lines, hand lines
+-   `subsistence fishing gears` =\> subsistence fishing gear
 
-**Findings**: Overall `purse seine` gear type dominates distribution of catch (tonnes). Purse seine catch is mainly made up of planktivorous species (see [Sardine, Anchovy and Herring](#small-pelagic-fish-sardine-anchovy-and-herring)). The proportion of catch from the trawl gear classes increases from 1980s. `Other gears` which includes miscellaneous gear types such as small scale pots, subsistence and artisinal fishing occupies an increasing proportion from 1990s onwards, as does the `small scale lines / squid jig` gear type. `small scale lines / squid jig` also catches a large amount of demersal fish, meaning these gear types would ideally be split with small scale lines assigned to linefishery and squid jig assigned its own gear class. However, this is not possible using the information from SAU data. `nets (including small scale nets)`, `linefishery` and `longline` gear types have very low proportions of overall catch. `Linefishery` gear type mainly catches migratory fish mainly consisting of [tunas](#tuna-and-large-pelagics).
+**Findings**: Overall `purse seine` gear type dominates distribution of catch (tonnes). Purse seine catch is mainly made up of planktivorous species (see [Sardine, Anchovy and Herring](#small-pelagic-fish-sardine-anchovy-and-herring)). The relative catch levels of all of these gear types remain relatively stable over the timeperiod.
 
 Distribution of catch by these assigned StrathE2E proposed gear types.
 
 ```{r strathe2e proposed gears}
-se2e_gear_landings <- landings %>%
-    mutate(gear_type_se2e = case_when(
-        gear_type %in% c("bottom trawl", "pelagic trawl") ~ "demersal + midwater trawl",
-        gear_type %in% c("bagnets", "cast nets", "small scale gillnets", "small scale encircling nets", "small scale seine nets", "small scale other nets", "gillnet") ~ "nets including small scale",
-        gear_type %in% c("hand lines", "pole and line", "recreational fishing gear") ~ "linefishery",
-        gear_type == "small scale lines" ~ "small scale lines / squid jig",
-        gear_type == "longline" ~ "'longline'",
-        gear_type == "purse seine" ~ "purse seine",
-        .default = "other gears"
-    )) %>%
-    group_by(year, gear_type_se2e, Guild) %>%
-    summarise(tonnes = sum(tonnes))
+# se2e_gear_landings <- landings %>%
+#     mutate(gear_type_se2e = case_when(
+#         gear_type %in% c("bottom trawl", "pelagic trawl") ~ "demersal + midwater trawl",
+#         gear_type %in% c("bagnets", "cast nets", "small scale gillnets", "small scale encircling nets", "small scale seine nets", "small scale other nets", "gillnet") ~ "nets including small scale",
+#         gear_type %in% c("hand lines", "pole and line", "recreational fishing gear") ~ "linefishery",
+#         gear_type == "small scale lines" ~ "small scale lines / squid jig",
+#         gear_type == "longline" ~ "'longline'",
+#         gear_type == "purse seine" ~ "purse seine",
+#         .default = "other gears"
+#     )) %>%
+#     group_by(year, gear_type_se2e, Guild) %>%
+#     summarise(tonnes = sum(tonnes))
 
 total_se2e_gear_landings <- se2e_gear_landings %>%
     group_by(year, gear_type_se2e) %>%
@@ -445,7 +467,8 @@ ggplot() +
         aes(x = year, y = tonnes, fill = Guild)
     )  +
     theme_minimal() +
-    facet_wrap(~gear_type_se2e, scales = "free_y")
+    facet_wrap(~gear_type_se2e, scales = "free_y") +
+    scale_x_continuous(n.breaks=3)
 ```
 
 Proportion of total landings for StrathE2E approximate gear types over time
@@ -458,22 +481,6 @@ ggplot() +
         color = "gray"
     ) +
     scale_y_continuous(breaks = 8) +
-    theme_minimal()
-```
-
-Distribution of purse-seine gear type landings in guilds caught (almost completely planktivore).
-
-```{r exploration of purse seine landings}
-p_s_landings <- se2e_gear_landings[se2e_gear_landings$gear_type_se2e == "purse seine", ] %>%
-    group_by(year) %>%
-    mutate(proportion = tonnes / sum(tonnes))
-
-ggplot() +
-    geom_area(
-        data = p_s_landings,
-        aes(x = year, y = proportion, fill = Guild),
-        color="gray"
-    ) +
     theme_minimal()
 ```
 
@@ -509,4 +516,55 @@ ggplot() +
         aes(x = year, y = tonnes, color = gear_type)
     ) +
     facet_wrap(~scientific_name, scale = "free_y")
+```
+
+# Seas Around Us Data Uncertainty
+Seas Around Us represent data uncertainty as a range of qualitative scores (1-4).
+The data for the southern Benguela region is uncertain, with scores from 1-2 (with most landings being 1).
+The following uncertainty scores appear in the Seas Around Us landings data:
+
+- `NA` : Unknown uncertainty score.
+- `1` : +/- 50%, Low agreement & low evidence.
+- `2` : +/- 30%, High agreement & limited evidence or medium agreement & medium evidence or low agreement & robust evidence.
+
+Proportion of yearly gear type landings (tonnes) attributed to each uncertainty score value.
+```{r}
+## For each gear type
+se2e_gear_landings$uncertainty_score <- as.factor(se2e_gear_landings$uncertainty_score)
+se2e_gear_landings$uncertainty_score <- ifelse(is.na(se2e_gear_landings$uncertainty_score), "NA", se2e_gear_landings$uncertainty_score)
+year_gear_total_landings <- se2e_gear_landings %>%
+    group_by(year, gear_type_se2e) %>%
+    summarise(year_sum_tonnes = sum(tonnes))
+sau_landings_uncertain_gear <- se2e_gear_landings %>%
+    group_by(year, uncertainty_score, gear_type_se2e) %>%
+    summarise(tonnes = sum(tonnes)) %>%
+    left_join(., year_gear_total_landings, by = c("year", "gear_type_se2e")) %>%
+    mutate(proportion_catch_uncertainty = tonnes / year_sum_tonnes)
+
+ggplot() +
+    geom_col(
+        data = sau_landings_uncertain_gear,
+        aes(x = year, y = proportion_catch_uncertainty, fill = uncertainty_score)
+    ) +
+    facet_wrap(~gear_type_se2e)
+```
+
+Proportion of yearly guild landings (tonnes) attributed to each uncertainty score.
+```{r}
+## For each Guild
+year_guild_total_landings <- se2e_gear_landings %>%
+    group_by(year, Guild) %>%
+    summarise(year_sum_tonnes = sum(tonnes))
+sau_landings_uncertain_guild <- se2e_gear_landings %>%
+    group_by(year, uncertainty_score, Guild) %>%
+    summarise(tonnes = sum(tonnes)) %>%
+    left_join(., year_guild_total_landings, by = c("year", "Guild")) %>%
+    mutate(proportion_catch_uncertainty = tonnes / year_sum_tonnes)
+
+ggplot() +
+    geom_col(
+        data = sau_landings_uncertain_guild,
+        aes(x = year, y = proportion_catch_uncertainty, fill = uncertainty_score)
+    ) +
+    facet_wrap(~Guild)
 ```
