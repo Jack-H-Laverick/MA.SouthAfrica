@@ -62,7 +62,7 @@ extract_habitat_data <- function(raster, habitats, fun, name) {
 
 format_sanbi_raster <- function(raster_fn, habitats) {
     #' Format a SANBI 'cumulative stress index' raster into usable values that contain just positive effort.
-    raster <- project(rast(raster_fn), "epsg:4326", method = "near") # Using nearest neighbour method because values are somewhat discrete
+    raster <- rast(raster_fn)
     raster <- crop(raster, habitats)
     raster <- as.numeric(raster)
     raster <- subst(raster, 0, NA) # Replace 0 values with NA because there is no fishing in that area.
@@ -92,7 +92,7 @@ sanbi_proportion_effort <- function(raster, habitats, fun, name) {
 
 # Load Midwater Trawl intensity data - need to acquire demersal trawl data - hours of trawling
 mw_intensity <- format_sanbi_raster(
-    "../../Spatial Data/fishing_effort_data/Midwater_Trawl_Intensity/Midwater_Trawl_Intensity/Midwater_Trawl_Intensity.tif",
+    "../../Spatial Data/fishing_effort_data/Midwater_Trawl_Intensity/Midwater_Trawl_Intensity/Midwater_Trawl_Intensity_{crs}.tif",
     habitats
 )
 mw_data <- sanbi_proportion_effort(
@@ -110,14 +110,14 @@ ggplot() +
 # Load spatial data for nets including small scale
 ## Load Gillnets
 gn_intensity <- format_sanbi_raster(
-    "../../Spatial Data/fishing_effort_data/Gill_Netting_Intensity/Gill_Net_Intensity/Gill_Net_Intensity.tif",
+    "../../Spatial Data/fishing_effort_data/Gill_Netting_Intensity/Gill_Net_Intensity/Gill_Net_Intensity_{crs}.tif",
     habitats
 )
 gn_intensity <- subst(gn_intensity, NA, 0) # Set NA values to 0 for addition of second layer
 
 ## Load beach seine nets
 bs_intensity <- format_sanbi_raster(
-    "../../Spatial Data/fishing_effort_data/Beach_Seine_Intensity/Beach_seine_Intensity/Beach_Seine_Intensity.tif",
+    "../../Spatial Data/fishing_effort_data/Beach_Seine_Intensity/Beach_seine_Intensity/Beach_Seine_Intensity_{crs}.tif",
     habitats
 )
 bs_intensity <- subst(bs_intensity, NA, 0) # Set NA values to 0 for addition of second layer
@@ -136,7 +136,7 @@ ggplot() +
 
 # Extract Squid Jig data
 sj_intensity <- format_sanbi_raster(
-    "../../Spatial Data/fishing_effort_data/Squid_Intensity/Squid_Intensity/Squid_Fishery_Intensity.tif",
+    "../../Spatial Data/fishing_effort_data/Squid_Intensity/Squid_Intensity/Squid_Fishery_Intensity_{crs}.tif",
     habitats
 )
 sj_data <- sanbi_proportion_effort(
@@ -167,7 +167,7 @@ purse_seine_data <- gfw_data %>%
 # Extract Demersal Trawl data (not available from SANBI yet)
 # Need to confirm the format and values of the data are similar to the other SANBI layers
 dt_intensity <- format_sanbi_raster(
-    "../../Spatial Data/fishing_effort_data/Demersal_Trawl_Intensity/Demersal_Trawl_Intensity.tif",
+    "../../Spatial Data/fishing_effort_data/Demersal_Trawl_Intensity/Demersal_Trawl_Intensity_{crs}.tif",
     habitats
 )
 dt_data <- sanbi_proportion_effort(dt_intensity, habitats, "sum", "demersal_trawl")
@@ -179,7 +179,7 @@ ggplot() +
 
 # Extract West Coast Rock Lobster data (catch - kg/km^2)
 wcrl_intensity <- format_sanbi_raster(
-    "../../Spatial Data/fishing_effort_data/West_Coast_Rock_Lobster_Intensity/West_Coast_Rock_Lobster_Intensity/West_Coast_Rock_Lobster_Intensity.tif",
+    "../../Spatial Data/fishing_effort_data/West_Coast_Rock_Lobster_Intensity/West_Coast_Rock_Lobster_Intensity/West_Coast_Rock_Lobster_Intensity_{crs}.tif",
     habitats
 )
 wcrl_data <- sanbi_proportion_effort(
@@ -196,13 +196,13 @@ ggplot() +
 # Extract recreational fishing gear spatial effort data
 # Combination of linefishery spatial effort and recreational-shore based effort
 rlf_intensity <- format_sanbi_raster(
-    "../../Spatial Data/fishing_effort_data/Linefish_Intensity/Linefish_Intensity/Linefish_Intensity.tif",
+    "../../Spatial Data/fishing_effort_data/Linefish_Intensity/Linefish_Intensity/Linefish_Intensity_{crs}.tif",
     habitats
 )
 rlf_intensity <- subst(rlf_intensity, NA, 0)
 
 rsb_intensity <- format_sanbi_raster(
-    "../../Spatial Data/fishing_effort_data/Recreational_Shore_Fishing_Intensity/Recreational_Shore_Fishing_Intensity/Recreational_Shore_Fishing_Intensity.tif",
+    "../../Spatial Data/fishing_effort_data/Recreational_Shore_Fishing_Intensity/Recreational_Shore_Fishing_Intensity/Recreational_Shore_Fishing_Intensity_{crs}.tif",
     habitats
 )
 rsb_intensity <- subst(rsb_intensity, NA, 0)
@@ -217,7 +217,7 @@ rec_data <- sanbi_proportion_effort(
 
 # Extract small scale lines spatial effort data
 ssl_intensity <- format_sanbi_raster(
-    "../../Spatial Data/fishing_effort_data/Linefish_Intensity/Linefish_Intensity/Linefish_Intensity.tif",
+    "../../Spatial Data/fishing_effort_data/Linefish_Intensity/Linefish_Intensity/Linefish_Intensity_{crs}.tif",
     habitats
 )
 ssl_data <- sanbi_proportion_effort(
@@ -233,7 +233,7 @@ ggplot() +
 
 # Extract subsistence fishing gear spatial effort data
 ssf_intensity <- format_sanbi_raster(
-    "../../Spatial Data/fishing_effort_data/Subsistence_Fishing_Intensity/Subsistence_Fishing_Intensity.tif",
+    "../../Spatial Data/fishing_effort_data/Subsistence_Fishing_Intensity/Subsistence_Fishing_Intensity_{crs}.tif",
     habitats
 )
 ssf_data <- sanbi_proportion_effort(
