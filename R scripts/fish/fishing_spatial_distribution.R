@@ -177,21 +177,24 @@ ggplot() +
     geom_sf(data = habitats, aes(color = Habitat), alpha = 0.4) +
     scale_fill_viridis_c()
 
-# Extract West Coast Rock Lobster data (catch - kg/km^2)
-wcrl_intensity <- format_sanbi_raster(
-    "../../Spatial Data/fishing_effort_data/West_Coast_Rock_Lobster_Intensity/West_Coast_Rock_Lobster_Intensity/West_Coast_Rock_Lobster_Intensity_{crs}.tif",
-    habitats
-)
+# Extract West Coast Rock Lobster data (catch - kg/km^2).
+# Commercial West Coast Rock Lobster trapping mainly occurs at depths greater than 100m over rocky habitats.
+# We distribute the effort evenly across rocky habitat areas at depths greater than 100m. This is then used to calculate the proportion of effort across the domain habitat types.
+GEBCO <- rast("../Shared data/GEBCO_2020.nc")
+GEBCO <- crop(GEBCO, round(ext(wcrl_intensity), digits = 3))
+GEBCO[GEBCO > -100] <- NA
+GEBCO[] <- 1
+
+rocky_greater_100 <- mask(GEBCO, habitats[habitats$Habitat == "rock", ])
 wcrl_data <- sanbi_proportion_effort(
-    wcrl_intensity,
+    rocky_greater_100,
     habitats,
     "sum",
     "West_Coast_Rock_Lobster_traps"
 )
-ggplot() +
-    geom_spatraster(data = wcrl_intensity, aes(fill = OID)) +
-    geom_sf(data = habitats, aes(color = Habitat), alpha = 0.4) +
-    scale_fill_viridis_c()
+# To avoid any errors where the raster and habitat data don't perfectly line up, any effort data for other habitat types has been removed before recalculating the proportions.
+wcrl_data[wcrl_data$Habitat != "rock", ]$West_Coast_Rock_Lobster_traps <- 0
+wcrl_data <- mutate(wcrl_data, proportion_West_Coast_Rock_Lobster_traps = West_Coast_Rock_Lobster_traps / sum(West_Coast_Rock_Lobster_traps))
 
 # Extract recreational fishing gear spatial effort data
 # Combination of linefishery spatial effort and recreational-shore based effort
