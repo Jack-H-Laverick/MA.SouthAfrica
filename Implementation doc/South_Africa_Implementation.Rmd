@@ -449,24 +449,60 @@ Our principal data sources for the fishing catch data were obtained from Seas Ar
 ## Catching power and discard rates of each resource guild by each gear: {.unnumbered}
 
 ## Regional activity rates, of each gear type {.unnumbered}
+Annual regional activity rates for each gear type were determined primarily through literature, with the Global Fishing Watch database being used in the absence of literature estimates for the purse-seine fleet.
+
+The sources used for each gear type are documented below:
+
+- `midwater trawl` : Estimated number of trawls for South Africa from [@reed17], scaled by the proportion of effort intersecting the model domain.
+
+- `nets including small scale` : Estimated number of gillnet and beach-seine fisher days (assuming 1 beach-seine haul per day) from [@hutchings02].
+
+- `pole and line` : Number of vessel rights allocated for pole and line fishing [@west24].
+
+- `squid jig` : Estimated number of vessels in fishery based on questionaire surveys [@cochrane14], scaled by the proportion of effort intersecting the model domain.
+
+- `longline` : Combined number of hooks from pelagic [@parker21] and demersal longline fisheries. Number of hooks for demersal longline fleet are calculated using the number of sets for 2010-2019 period from [@bergh22] and the number of hooks per set is assumed to be 14,000 [@nyengera19].
+
+- `purse seine` : Annual effort data for purse-seine fishery is not available in literature. Data is taken from Global Fishing Watch AIS apparent fishing effort datasets. Daily fleet data is taken for the ZAF-purse-seine fleet and converted to a raster format. The annual effort is taken as the total number of hours of fishing occurring within the domain area, averaged over the 2010-2019 period.
+
+- `demersal trawl` : Demersal trawl annual activity data is taken from [@barrybaker07], with values available for number of trawling hours from 1996-2004. Only data values from 2000-2004 are used to calculate the average regional activity due to a substantial decrease in activity between 1990s and 2000s.
+
+- `West Coast Rock Lobster traps` : Annual activity data (number of trips) is available for the 2016-2019 period from [@Eggers21]. Only the offshore sector trips are included in calculations as this geartype contains the commercial offshore trapping fleet. Other gears, including small scale and subsistence are assumed to capture the nearshore West Coast Rock Lobster fishery, which is distinct from the offshore fishery [@dffe23].
+
+- `recreational fishing gear` : Annual activity data for recreational fishing sector is taken from [@pots21] and is scaled to 18% of the estimated marine fishers from [@pots21] as 18% of questionaire respondents lived in the Western Cape region. This survey was performed in the 2016-17 period.
+
+- `small scale lines` : The Status of Marine Fishery Resources South Africa 2023 [@dffe23] report suggests that there are 7200 small scale fishers with 85% of targetting linefish, which is the target of this fishing fleet.
+
+- `subsistence fishing gear` : Annual activity data for subsistence fishing gear taken from [@clark02]. Clark et al [-@clark02] identified subsistence fishers along the coast of South Africa in various zones. Zones A-C correspond to the model domain, values from these zones were summed to get the total number of subsistence fishers as a measure of activity.
 
 ## Spatial proportional distribution of activity by each gear {.unnumbered}
+For all fishing fleets, the proportion of fishing gear activity over the habitat domain is calculated as the proportion of the target gear's activity that occurs within each habitat/shore type. E.g. if 1h of trawling occurs in the inshore rocky habitat type and the total amount of activity occurring in the domain is 10h then the inshore rocky habitat type will have a proportion of 0.1. This produces a gear-type x habitat matrix, with rows for each gear-type summing to 1. Proportion calculations were primarily performed using spatial activity data in raster formats and habitat domain data in vector formats.
 
-## Data processing to derive timevarying parameters of the fishing fleet model Norwegian fishing catch and activity in the Norwegian Sea {.unnumbered}
+Where data are obtained from SANBI, the data have been created to contribute to cumulative marine pressure mapping for the 2018 National Biodiversity Assessment. These data were created from various sources of spatial fishing activity and catch, and have been manipulated to remove outlier values (e.g. removing values above the 90% percentile). As some layers are derived from spatial catch density, these layers may not fully represent the extent of fleet activity.
 
-### Norwegian fishing catch and activity in the Norwegian Sea {.unnumbered}
+The sources and processing for each gear type are described below:
+- `midwater trawl` : Midwater trawl spatial pressure data were obtained from SANBI [@sanbi18]. These data are derived from values of hours of trawling.
 
-### Demersal and migratory catch by tourist and recreational fishing activity {.unnumbered}
+- `nets including small scale` : Gillnet and Beach-seine spatial pressure data from SANBI [@sanbi18] were combined. These data are derived from numbers of fishing rights allocated / km^2.
 
-#### Introduction {.unnumbered}
+- `pole and line` : 
 
-#### Estimation of Norwegian tourism and recreation catches {.unnumbered}
+- `squid jig` : Squid jig spatial pressure data were obtained from SANBI [@sanbi18]. These data are derived from values of catch in kg / km^2.
 
-### International fishing catch and activity in the Norwegian Sea {.unnumbered}
+- `longline` :  Pelagic and demersal longline data from Global Fishing Watch [@gfw25] were combined. These data are derived from Automatic Identification System (AIS) devices on fishing vessels and classified into fleets using machine learning models.
 
-#### International Catch by gear and guild {.unnumbered}
+- `purse seine` : Purse seine data were obtained from Global Fishing Watch [@gfw25]. These data are derived from Automatic Identification System (AIS) devices on fishing vessels and classified into fleets using machine learning models.
 
-#### International effort by gear {.unnumbered}
+- `demersal trawl` :
+
+- `West Coast Rock Lobster traps` : Commercial West Coast Rock Lobster traps are used in rocky habitats at depths greater than 100m [@dffe23]. We distribute West Coast Rock Lobster trap activity uniformly over rocky habitat regions at depths > 100m before calculating the proportion of activity between inshore and offshore rocky habitat zones.
+
+- `recreational fishing gear` : Linefishery and shore-based recreational fishing gear spatial pressure data from SANBI [@sanbi18] were combined. The linefishery data layer from SANBI approximately represents recreational boat-based fishing activity [@sanbi18]. Linefish spatial pressure data were derived from values in catch kg / km^2, while shore-based recreational fishing spatial pressure data were derived from values in density of fishers / km^2.
+
+- `subsistence fishing gear` :
+
+## Fishing fleet landings and discards by gear and guild
+Due to a lack of publically available official fisheries data and time constraints, Seas Around Us catch data are used to calculate fishing fleet input data for the implementation.
 
 ### Discard rates {.unnumbered}
 
