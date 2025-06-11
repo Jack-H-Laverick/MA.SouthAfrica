@@ -504,17 +504,27 @@ The sources and processing for each gear type are described below:
 ## Fishing fleet landings and discards by gear and guild
 Due to a lack of publically available official fisheries data and time constraints, Seas Around Us catch data are used to calculate fishing fleet input data for the implementation.
 
-### Discard rates {.unnumbered}
+Species in Seas Around Us data that were previously not accounted for in StrathE2E guilds were allocated to guilds based on diet composition and movement information from FishBase. Snoek (*Thyrsites atun*), previously allocated to demersal fish in StrathE2E, was allocated to Migratory fish due to it's migratory nature in the model domain and to align with the species classification in EwE application from [-@shannon20]. Yellowtail Kingfish (*Seriola lalandi*), previously allocated to planktivorous fish, was allocated to Demersal fish due to it's predatory ecology and classification in EwE from [-@shannon20].
 
-#### Norwegian fleet discards {.unnumbered}
+Gear types in Seas Around Us data were matched to the chosen fleets for the StrathE2E model implementation as follows:
 
-#### Additional bycatch in the Norwegian Sea {.unnumbered}
+- `midwater trawl` => 'pelagic trawl'
+- `nets including small scale` => 'bagnets', 'cast nets', 'small scale gillnets', 'small scale encircling nets', 'small scale seine nets', 'small scale other nets', 'gillnets'
+- `pole and line` => 'pole and line'
+- `longline` => 'longline'
+- `demersal trawl` => 'bottom trawl'
+- `recreational fishing gear` => 'recreational fishing gear'
+- `small scale lines` => 'small scale lines', 'hand lines'
+- `subsistence fishing gear` => 'subsistence fishing gear'
+- `squid jig` => The squid jig fishing fleet was added by taking squid catch from the 'small scale lines' gear type and renaming the gear to 'squid jig'. It is assumed that these catches were obtained by fishers using squid jigs and were collated with other small scale lines fishing methods by Seas Around Us, and should be separated into a separate gear type as squid jigs have high species selectivity compared to other small scale lines using hooks.
+- `West Coast Rock Lobster traps` => West Coast Rock Lobsters (*Jasus lalandii*) are primarily caught by 'unknown class' in Seas Around Us data. It was assumed that this proportion of the *J lalandii* catch was taken by commercial fishers using traps as *J lalandii* are also caught, in lower levels, by the nets gear type, which likely represents the nearshore netfishery for West Coast Rock Lobster. These 'unknown class' catch for *J lalandii* were relabeled as `West Coast Rock Lobster traps` gear type. There is low evidence for bycatch in this fishery [@dffe23], so only *J lalandii* catch were attributed to this gear type.
 
-##### Bycatch of cetaceans {.unnumbered}
+### Bycatch of birds
+#### Longlines
+The numbers of birds caught and examined at port from the pelagic longline fishery [@rollinson17] and demersal longline fishery [@peterson09] were used to calculate bycatch weights for birds by the longline fishing gear type. In the longline fishery in South Africa, permits state that any deceased birds must be returned to port for examination, these values were therefore attributed as landings. [-@peterson09] suggest that 40% of birds caught in the longline fishery are not returned to port due to operational reasons. Therefore 40% of the total seabird-longline bycatch weight was attributed to seabird-longline discards.
 
-##### Bycatch of pinnipeds {.unnumbered}
-
-##### Bycatch of birds {.unnumbered}
+#### Demersal trawl
+[-@watkins08] present numbers of birds killed in the demersal trawl fishery. It is assumed that these birds are most often killed during waste dumping and are not returned to port, and therefore have been attributed to the fishery as discards [@watkins08].
 
 ### Final processing {.unnumbered}
 
@@ -529,11 +539,6 @@ Due to a lack of publically available official fisheries data and time constrain
 
 5.  Fishing power was calculated as catch / activity per gear.
 
-### Losses by processing-at-sea rates {.unnumbered}
-
-Processing-at-sea refers to the practice on some types of vessels of eviscerating selected proportions of the catch and returning the viscera to the sea as offal.
-To obtain the part of the landings being rejected at sea as offal, we calculated $(Round weight-post-processed weight)/Round weight$.
-
 # Target data {.unnumbered}
 Target data is used for optimisation in the fitting of parameters.
 
@@ -541,7 +546,6 @@ Target data is used for optimisation in the fitting of parameters.
 Biological target data for the region such as production measures, diet composition and Production/Biomass ratios were provided by Lynne Shannon and Kelly Ortega-Cisneros from [@shannon20]. These data are derived from an Ecopath with Ecosim model of the Southern Benguela region.
 
 ## Physical target data
-
 ### Seasonal nutrient concentrations
 Season allocations: seasonal nutrient concentrations were calculated using Nov-Feb as 'winter' months and May-Aug as 'summer' months to match the Northern Hemisphere development of StrathE2E, despite South Africa's austral seasons.
 
