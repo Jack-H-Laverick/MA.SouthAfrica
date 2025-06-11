@@ -30,7 +30,10 @@ added_species_name <- c(
     "Galeocerdo cuvier",
     "Lepidocybium flavobrunneum",
     "Teuthida",
-    "Galeichthys feliceps"
+    "Galeichthys feliceps",
+    "Trachurus capensis",
+    "Mugil cephalus",
+    "Liza tricuspidens"
 )
 added_common_name <- c(
     "Pacific Sardine",
@@ -57,7 +60,10 @@ added_common_name <- c(
     "Tiger Shark",
     "Escolar",
     "Squids",
-    "White barbel"
+    "White barbel",
+    "Cape horse mackerel",
+    "Flathead grey mullet",
+    "Striped mullet"
 )
 added_groupname <- c(
     "Sardine",
@@ -84,7 +90,10 @@ added_groupname <- c(
     "Shark",
     "Mackerel",
     "Squids",
-    "Catfishes"
+    "Catfishes",
+    "Horse mackerel",
+    "Mullet",
+    "Mullet"
 )
 added_category <- c(
     "Planktivore",
@@ -111,9 +120,12 @@ added_category <- c(
     "Demersal",
     "Demersal",
     "Pelagic invertebrate",
+    "Demersal",
+    "Demersal",
+    "Demersal",
     "Demersal"
 )
-added_fao <- c("CHP", "WRR", "SLF", "PGA", "SOW", NA, "WHM", NA, "SOE", "CGE", "CHM", "RER", "MLS", "BLM", "EDR", "NTC", "CYM", "WAH", "BWA", "WSH", NA, "TIG", "LEC", NA, "GAT")
+added_fao <- c("CHP", "WRR", "SLF", "PGA", "SOW", NA, "WHM", NA, "SOE", "CGE", "CHM", "RER", "MLS", "BLM", "EDR", "NTC", "CYM", "WAH", "BWA", "WSH", NA, "TIG", "LEC", NA, "GAT", NA, NA, NA)
 added_guild <- c(
     "Planktivore",
     "Planktivore",
@@ -139,6 +151,9 @@ added_guild <- c(
     "Demersal",
     "Demersal",
     "Zooplankton carnivore",
+    "Demersal",
+    "Demersal",
+    "Demersal",
     "Demersal"
 )
 filler <- rep(NA, length(added_species_name))
@@ -161,4 +176,12 @@ added_species <- data.frame(
 )
 
 known_species <- rbindlist(list(known_species, added_species))
+
+# Manually move Thyrsites atun (Snoek) from demersal to migratory guild to align with species migratory nature in Southern Benguela system and
+# align with Shannon et al. (2020) EwE classification.
+known_species[known_species$Scientific.name == "Thyrsites atun", c("Category", "Guild")] <- "Migratory"
+
+# Manually move Seriola lalandi (Yellowtail) from Planktivore to demersal guild to align with Shannon et al. (2020) EwE classification.
+known_species[known_species$Scientific.name == "Seriola lalandi", c("Guild")] <- "Demersal"
+
 write.csv(known_species, "./Objects/updated_known_fish_guilds.csv")
