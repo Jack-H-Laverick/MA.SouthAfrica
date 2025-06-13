@@ -178,51 +178,12 @@ strath_e2e_gear_landings <- landings %>%
     filter(!is.na(Guild) & year >= start_year & year <= end_year)
 arrow::write_parquet(strath_e2e_gear_landings, "./Objects/sau_landings_strath_gears.parq")
 
-guild_gear_catch <- strath_e2e_gear_landings %>%
-    group_by(gear_type_se2e, Guild) %>%
-    summarise(tonnes = mean(tonnes)) %>%
-    filter(gear_type_se2e != "other gears")
-
-catch_matrix_data <- expand.grid(
-    Guild = strathe2e_guilds,
-    gear_type_se2e = strathe2e_gear_types
-) %>%
-    left_join(., guild_gear_catch[, c("gear_type_se2e", "Guild", "tonnes")], by = c("gear_type_se2e", "Guild")) %>%
-    filter(Guild != "NA" & Guild != "")
-
-# Add longline (pelagic and longline) bird landings data (catch for birds from longlines are added to landings because birds are taken to port in this fishery)
-# Data values taken from Rollinson et al (2017). Patterns and trends in seabird bycatch in the pelagic longline fishery off South Africa
-# And: Peterson et al. (2009). Seabird bycatch in the demersal longline fishery off South Africa
-# number of birds * bird mass (kg) / number of study years (for each data source pelagic and demersal)
-additional_bird_longline <- c(
-    (482 / 8) * 3.8977, # 482 (pelagic longline) Thalassarche cauta/steadi (Rollinson et al. 2017).
-    (159 / 8) * 3.2029, # 159 (pelagic longline) Thalassarche melanophris (Rollinson et al. 2017).
-    (77 / 8) * 2.1288, # 77 (pelagic longline) Thalassarche carteri (Rollinson et al. 2017).
-    ((18 / 8) + (3 / 7)) * 2.1288, # 18 (pelagic longline) Thlassarche chlororhynchos (Rollinson et al. 2017).  3 (demersal longline) (Peterson et al. 2009)
-    (3 / 8) * 8.9056, # 3 (pelagic longline) Diomedea sandfordi/epomophora (Rollinson et al. 2017).
-    (5 / 8) * 6.9613, # 5 (pelagic longline) Diomedea exulans (Rollinson et al. 2017).
-    (7 / 8) * 4.2063, # 7 (pelagic longline) Macronectes halli/giganteus (Rollinson et al. 2017).
-    ((1541 / 8) + (38 / 7)) * 1.213, # 1541 (pelagic longline) Procellaria aequinoctialis (Rollinson et al. 2017). 38 (demersal longline) (Peterson et al. 2009)
-    (1 / 8) * 1.131, # 1 (pelagic longline) Procellaria cinerea (Rollinson et al. 2017).
-    (1 / 8) * 0.4296, # 1 (pelagic longline) Daption capense (Rollinson et al. 2017).
-    ((2 / 8) + (11 / 7)) * 0.849, # 2 (pelagic longline) Puffinus gravis (Rollinson et al. 2017). 11 (demersal longline) (Peterson et al. 2009)
-    (2 / 8) * 1.650, # 2 (pelagic longline) Catharacta antarctica (Rollinson et al. 2017).
-    ((45 / 8) + (18 / 7)) * 2.643 # 45 (pelagic longline) Morus capensis (Rollinson et al. 2017). 18 (demersal longline) (Peterson et al. 2009)
-)
-additional_bird_longline <- sum(additional_bird_longline) / 1000 # Convert to tonnes from kg
-catch_matrix_data[catch_matrix_data$Guild == "Birds" & catch_matrix_data$gear_type_se2e == "longline", ]$tonnes <- additional_bird_longline
-
-ggplot() +
-    geom_tile(data = catch_matrix_data, aes(x = gear_type_se2e, y = Guild, fill = log(tonnes))) +
-    scale_fill_viridis_c()
-
-
 # Discards by StrathE2E gear type and guild
-guild_gear_discards <- discards %>%
+strath_e2e_gear_discards <- discards %>%
     mutate(gear_type_se2e = case_when(
         gear_type == midwater_trawl_sau_gears ~ "midwater trawl",
         gear_type %in% nets_sau_gears ~ "nets including small scale",
-        gear_type %in% linefishery_sau_gears ~ "linefishery",
+        gear_type %in% pole_and_line_sau_gears ~ "pole and line",
         gear_type == squidjig_sau_gears ~ "squid jig",
         gear_type == longline_sau_gears ~ "longline",
         gear_type == purseseine_sau_gears ~ "purse seine",
@@ -236,85 +197,39 @@ guild_gear_discards <- discards %>%
         # !gear_type %in% all_accounted_sau_gears & fishing_sector == "Subsistence" ~ "other subsistence",
         .default = "other gears"
     )) %>%
-    group_by(gear_type_se2e, Guild) %>%
-    summarise(tonnes = sum(tonnes)) %>%
-    filter(gear_type_se2e != "other gears")
+    filter(!is.na(Guild) & year >= start_year & year <= end_year)
+arrow::write_parquet(strath_e2e_gear_discards, "./Objects/sau_discards_strath_gears.parq")
 
-discards_matrix_data <- expand.grid(
-    Guild = strathe2e_guilds,
-    gear_type_se2e = strathe2e_gear_types
-) %>%
-    left_join(., guild_gear_discards, by = c("gear_type_se2e", "Guild")) %>%
-    filter(Guild != "NA") # %>%
+# ggplot() +
+#     geom_area(
+#         data = squid_jig_prop,
+#         aes(x = year, y = proportion, fill = Guild),
+#         color = "gray"
+#     ) +
+#     theme_minimal() +
+#     labs(y = "proportion_of_landings")
 
-# Add discards from seabirds in pelagic longline fishery from Peterson et al. (2009) Seabird bycatch in the pelagic longline fishery off south africa.
-# Peterson et al. 2009 suggest that 40% of seabirds are not brought back to shore for operational reasons.
-# We can then transform the catch back into total seabird bycatch and then get a discard rate
-total_bird_longline_bycatch <- catch_matrix_data[catch_matrix_data$Guild == "Birds" & catch_matrix_data$gear_type_se2e == "longline", ]$tonnes / 0.6
-discards_matrix_data[discards_matrix_data$Guild == "Birds" & discards_matrix_data$gear_type_se2e == "longline", ]$tonnes <- total_bird_longline_bycatch * 0.4
 
-# Add demersal trawl seabird discards data (assumed that birds are most often killed during waste dumping and are not kept to bring to port).
-# Data values taken from Watkins et al. (2008). Interactions between seabirds and deep-water hake trawl gear: an assessment of impacts in south African waters.
-# Number of birds * bird mass (kg)
-additional_bird_demersal_trawl <- c(
-    11 * 2.643, # 11 Morus capensis (Watkins et al. 2008)
-    13 * 3.8977, # 13 Thalassarche cauta (Watkins et al. 2008)
-    11 * 3.2029, # 11 Thalassarche melanophris (Watkins et al. 2008)
-    3 * 1.213, # 3 Procellaria aequinoctialis (Watkins et al. 2008)
-    1 * 0.787, # 1 Ardenna grisea (Watkins et al. 2008)
-    1 * 1.65 # 1 Stercorarius antarcticus (Watkins et al. 2008)
-)
-discards_matrix_data[discards_matrix_data$Guild == "Birds" & discards_matrix_data$gear_type_se2e == "demersal trawl", ]$tonnes <- sum(additional_bird_demersal_trawl) / 1000
 
-ggplot() +
-    geom_tile(data = discards_matrix_data, aes(x = gear_type_se2e, y = Guild, fill = tonnes)) +
-    scale_fill_viridis_c()
-ggplot() +
-    geom_tile(data = discards_matrix_data, aes(x = gear_type_se2e, y = Guild, fill = log(tonnes))) +
-    scale_fill_viridis_c()
+# Comparing Seas Around Us data and pelagic longline landings data from ITOC tuna report
+# pll_report <- extract_tables("../../Fishing Data/mike_effort_data/IOTC-2021-SC24-NR25_-_South_Africa.pdf", output = "tibble", pages = c(8))[[1]][5:15, ]
+# names(pll_report) <- c("year", "nhooks", "Bigeye tuna", "Yellowfin tuna", "Albacore", "Southern Bluefin tuna", "Swordfish", "Skipjack", "Shortfin mako", "Blue shark", "NEI")
+# remove_num_space <- function(x) {
+#     return(paste(str_split(x, "( )")[[1]], collapse = ""))
+# }
 
-ggplot() +
-    geom_area(
-        data = squid_jig_prop,
-        aes(x = year, y = proportion, fill = Guild),
-        color = "gray"
-    ) +
-    theme_minimal() +
-    labs(y = "proportion_of_landings")
+# pll_catch <- pll_report %>%
+#     select(!nhooks) %>%
+#     pivot_longer(!year, names_to = "common_name", values_to = "tonnes") %>%
+#     mutate(tonnes = as.numeric(tonnes))
 
-# Seas Around Us uncertainty scores
-## For each gear type
-strath_e2e_gear_landings$uncertainty_score <- as.factor(strath_e2e_gear_landings$uncertainty_score)
-strath_e2e_gear_landings$uncertainty_score <- ifelse(is.na(strath_e2e_gear_landings$uncertainty_score), "NA", strath_e2e_gear_landings$uncertainty_score)
-year_gear_total_landings <- strath_e2e_gear_landings %>%
-    group_by(year, gear_type_se2e) %>%
-    summarise(year_sum_tonnes = sum(tonnes))
-sau_landings_uncertain_gear <- strath_e2e_gear_landings %>%
-    group_by(year, uncertainty_score, gear_type_se2e) %>%
-    summarise(tonnes = sum(tonnes)) %>%
-    left_join(., year_gear_total_landings, by = c("year", "gear_type_se2e")) %>%
-    mutate(proportion_catch_uncertainty = tonnes / year_sum_tonnes)
-
-ggplot() +
-    geom_col(
-        data = sau_landings_uncertain_gear,
-        aes(x = year, y = proportion_catch_uncertainty, fill = as.factor(uncertainty_score))
-    ) +
-    facet_wrap(~gear_type_se2e)
-
-## For each Guild and gear type
-year_guild_total_landings <- strath_e2e_gear_landings %>%
-    group_by(year, Guild) %>%
-    summarise(year_sum_tonnes = sum(tonnes))
-sau_landings_uncertain_guild <- strath_e2e_gear_landings %>%
-    group_by(year, uncertainty_score, Guild) %>%
-    summarise(tonnes = sum(tonnes)) %>%
-    left_join(., year_guild_total_landings, by = c("year", "Guild")) %>%
-    mutate(proportion_catch_uncertainty = tonnes / year_sum_tonnes)
-
-ggplot() +
-    geom_col(
-        data = sau_landings_uncertain_guild,
-        aes(x = year, y = proportion_catch_uncertainty, fill = uncertainty_score)
-    ) +
-    facet_wrap(~Guild)
+# ggplot() +
+#     geom_col(
+#         data = strath_e2e_gear_landings[strath_e2e_gear_landings$gear_type_se2e == "longline" & strath_e2e_gear_landings$Guild == "Migratory", ],
+#         aes(x = year, y = tonnes, fill = common_name)
+#     )
+# ggplot() +
+#     geom_col(
+#         data = pll_catch,
+#         aes(x = year, y = tonnes, fill = common_name)
+#     )
