@@ -27,7 +27,7 @@ create_variable_raster <- function(flag_data, x_var, target) {
     return(var_raster)
 }
 
-create_effort_raster <- function(dataframe, vars, target, target_flag) {
+create_effort_raster <- function(dataframe, vars, target, target_flag, area) {
     tic()
     flag_data <- filter(dataframe, flag == target_flag) # Limit to one in turn
     vars <- names(select(flag_data, !c(cell_ll_lon, cell_ll_lat, flag, year)))
@@ -49,7 +49,7 @@ create_effort_raster <- function(dataframe, vars, target, target_flag) {
     print(glue::glue("Now saving {target_flag}")) # Keeping track
     future_map2(flag_rasters, paste0(target_flag, "-", vars), ~ { # Then save to netcdf
         writeCDF(.x,
-            filename = paste0("./Data/fleet_fishing_", .y, ".nc"), overwrite = TRUE, # Building a name from flag and variable
+            filename = paste0("./Data/fleet_fishing_", .y, "_", area, ".nc"), overwrite = TRUE, # Building a name from flag and variable
             varname = .y, unit = "Hours", zname = "year",
             atts = c("x=Longitude", "y=Latitude")
         )
@@ -104,7 +104,7 @@ cumulative_fishing_hours <- arrange(cumulative_fishing_hours, desc(total_fishing
 vars <- unique(fleet_domain$gear_type_reclass)
 flags <- unique(cumulative_fishing_hours[cumulative_fishing_hours$prop_of_total >= 0.01, ]$flag)
 
-walk(flags, function(x) create_effort_raster(fleet_domain_wider, vars, target, x), .progress = TRUE)
+walk(flags, function(x) create_effort_raster(fleet_domain_wider, vars, target, x, "domain"), .progress = TRUE)
 
 bbox <- st_bbox(sau_west_area)
 res <- 0.01
@@ -149,4 +149,4 @@ cumulative_fishing_hours <- arrange(cumulative_fishing_hours, desc(total_fishing
 vars <- unique(fleet_sau_area$gear_type_reclass)
 flags <- unique(cumulative_fishing_hours[cumulative_fishing_hours$prop_of_total >= 0.01, ]$flag)
 
-walk(flags, function(x) create_effort_raster(fleet_sau_area_wider, vars, empty_sau_raster, x), .progress = TRUE)
+walk(flags, function(x) create_effort_raster(fleet_sau_area_wider, vars, empty_sau_raster, x, "sau_area"), .progress = TRUE)
