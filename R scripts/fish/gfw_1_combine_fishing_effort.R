@@ -3,6 +3,15 @@
 library(tidyverse)
 library(arrow)
 library(docstring)
+library(sf)
+
+sa_eez <- read_sf("./Data/spatial/SA_EEZ.json")
+sau_fao_area <- read_sf("./Data/spatial/FAO_Major_Fishing_Areas.geojson") %>%
+    filter(F_CODE == "47")
+
+# Retrieve just the area that Seas Around Us uses for the Atlantic and Cape region, which is the intersection between the SA EEZ and the FAO zone 47
+sau_west_area <- st_intersection(sa_eez, sau_fao_area)
+st_write(sau_west_area, "./Objects/sau_atlantic_cape_region.gpkg")
 
 combine_csv_parquet <- function(dir) {
     #' Combine multiple CSV files into a single parquet
