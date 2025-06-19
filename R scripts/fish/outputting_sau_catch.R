@@ -36,6 +36,8 @@ strathe2e_guilds <- c(
 )
 guild_codes <- names(strathe2e_guilds)
 
+prop_sau_activity_in_domain <- read.csv("./Objects/proportion_sau_activity_in_domain.csv")
+
 # Landings
 arrow::write_parquet(strath_e2e_gear_landings, "./Objects/sau_landings_strath_gears.parq")
 

@@ -9,11 +9,6 @@ domain <- st_union(domain)
 # Retrieve just the area that SAU uses for the Atlantic and Cape region, which is the intersection between the SA EEZ and the FAO zone 47
 sau_west_area <- read_sf("./Objects/sau_atlantic_cape_region.gpkg")
 
-# ggplot() +
-#     geom_sf(data = sa_eez) +
-#     geom_sf(data = sau_west_area) +
-#     geom_sf(data = habitats)
-
 gfw_polygon_effort <- function(file, polygons) {
     #' Extracting GFW data for habitat polygons from GFW netcdf files.
     #'
@@ -85,6 +80,16 @@ net_activity_sau_area <- global(net_intensity_sau_area, fun = "sum", na.rm = TRU
 prop_sau_nets <- net_activity_domain / net_activity_sau_area
 
 #
+# Pole and line
+tpl_fn <- glue("../../Spatial Data/fishing_effort_data/Tuna_Pole_Intensity/Tuna_Pole_Intensity/Tuna_Pole_Intensity_{crs}.tif")
+tpl_intensity_domain <- format_sanbi_raster(tpl_fn, domain)
+tpl_activity_domain <- global(tpl_intensity_domain, fun = "sum", na.rm = TRUE)
+tpl_intensity_sau_area <- format_sanbi_raster(tpl_fn, sau_west_area)
+tpl_activity_sau_area <- global(tpl_intensity_sau_area, fun = "sum", na.rm = TRUE)
+
+prop_sau_tpl <- tpl_activity_domain / tpl_activity_sau_area
+
+#
 # Squid jig
 sj_fn <- glue("../../Spatial Data/fishing_effort_data/Squid_Intensity/Squid_Intensity/Squid_Fishery_Intensity_{crs}.tif")
 sj_intensity_domain <- format_sanbi_raster(sj_fn, domain)
@@ -132,6 +137,16 @@ sau_purse_seine_data <- gfw_polygon_effort("fleet_fishing_ZAF-purse_seine_sau_ar
 
 prop_sau_purse_seine <- as.numeric(domain_purse_seine_data / sau_purse_seine_data)
 
+#
+# Demersal trawl
+dmt_fn <- glue("../../Spatial Data/fishing_effort_data/Demersal_Trawl_Intensity/Demersal_Trawl_Intensity/Demersal_Trawl_Intensity_{crs}.tif")
+dmt_intensity_domain <- format_sanbi_raster(dmt_fn, domain)
+dmt_activity_domain <- global(dmt_intensity_domain, fun = "sum", na.rm = TRUE)
+dmt_intensity_sau_area <- format_sanbi_raster(dmt_fn, sau_west_area)
+dmt_activity_sau_area <- global(dmt_intensity_sau_area, fun = "sum", na.rm = TRUE)
+
+prop_sau_dmt <- dmt_activity_domain / dmt_activity_sau_area
+
 # West Coast Rock Lobster traps
 # Assume that all West Coast Rock Lobster traps occurs within the domain as the South Coast Rock Lobster dominates the southern coast of South Africa
 prop_sau_wcrl <- 1
@@ -177,3 +192,33 @@ ssf_intensity_sau_area <- format_sanbi_raster(ssf_fn, sau_west_area)
 ssf_activity_sau_area <- global(ssf_intensity_sau_area, fun = "sum", na.rm = TRUE)
 
 prop_sau_ssf <- ssf_activity_domain / ssf_activity_sau_area
+
+prop_sau_activity <- data.frame(
+    gear_type = c(
+        "MWT" = "midwater trawl",
+        "NTS" = "nets including small scale",
+        "TPL" = "pole and line",
+        "SJ" = "squid jig",
+        "LL" = "longline",
+        "PS" = "purse seine",
+        "DMT" = "demersal trawl",
+        "WCRLT" = "WC Rock Lobster traps",
+        "RFG" = "recreational fishing gear",
+        "SSL" = "small scale lines",
+        "SBF" = "subsistence fishing gear"
+    ),
+    proportion_sau_activity_in_domain = c(
+        prop_sau_mw,
+        prop_sau_nets,
+        prop_sau_tpl,
+        prop_sau_sj,
+        prop_sau_longline,
+        prop_sau_purse_seine,
+        prop_sau_dmt,
+        prop_sau_wcrl,
+        prop_sau_rec,
+        prop_sau_ssl,
+        prop_sau_ssf
+    )
+)
+write.csv(prop_sau_activity, "./Objects/proportion_sau_activity_in_domain.csv")
