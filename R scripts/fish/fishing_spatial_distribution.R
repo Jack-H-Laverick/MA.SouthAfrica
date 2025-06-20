@@ -1,55 +1,16 @@
 library(ggplot2)
 library(terra)
+library(tidyterra)
 library(sf)
 library(glue)
 library(docstring)
 library(tidyterra)
 library(exactextractr)
-source("./R scripts/fish/fisheries_data_functions.R")
+
 source("./R scripts/@_Region file.R")
 
 # Load habitat map
 habitats <- readRDS("./Objects/Habitats.rds")
-
-# Load GFW effort data (hours)
-gfw_polygon_extraction <- function(file, polygons) {
-    #' Extracting GFW data for habitat polygons from GFW netcdf files.
-    #'
-    #' File takes a file name containing flag and GFW variable information.
-    #' Calculates the total hours for each year and habitat/shore type.
-    flag <- file %>%
-        str_split_i(pattern = "(?=[-])", i = 1) %>%
-        str_split_i(pattern = "(?<=[_])", i = 3)
-    variable <- file %>%
-        str_split_i(pattern = "([-])", i = 2) %>% # Split to get last section of file name
-        str_split_i(pattern = "([.])", i = 1)
-
-    extracted_data <- rast(glue("./Data/{file}")) %>% # Import a brick of all years
-        exact_extract(polygons, fun = "sum", append_cols = c("Habitat", "Shore")) %>% # Sum fishing hours within habitat types
-        pivot_longer(
-            cols = matches("\\d"),
-            names_to = "year",
-            values_to = "hours"
-        ) %>%
-        mutate(year = as.numeric(str_split_i(year, "(?<=[=])", i = 2))) %>%
-        mutate(variable = glue("{flag}_{variable}")) %>%
-        select(c(Habitat, Shore, year, variable, hours))
-
-    return(extracted_data)
-}
-
-nc_files <- list.files("./Data/", pattern = ".nc")
-# Extract the total yearly effort in hours for each habitat/shore area and variable
-extracted_data <- map(
-    nc_files,
-    function(x) gfw_polygon_extraction(x, habitats)
-)
-# For each variable, calculate the proportion of effort distributed to each habitat/shore type
-gfw_data <- rbindlist(extracted_data) %>%
-    group_by(variable, Habitat, Shore) %>%
-    summarise(hours = mean(hours)) # %>%
-# group_by(variable) %>%
-# mutate(proportion = hours / sum(hours))
 
 extract_habitat_data <- function(raster, habitats, fun, name) {
     #' Use exactextractr::exact_extract() function to extract raster data from each zone and rename resulting column.
@@ -65,7 +26,7 @@ format_sanbi_raster <- function(raster_fn, habitats) {
     raster <- rast(raster_fn)
     raster <- crop(raster, habitats)
     raster <- as.numeric(raster)
-    raster <- subst(raster, 0, NA) # Replace 0 values with NA because there is no fishing in that area.
+    raster <- subst(raster, -200:0, NA) # Replace 0 values with NA because there is no fishing in that area.
 
     return(raster)
 }
@@ -79,20 +40,9 @@ sanbi_proportion_effort <- function(raster, habitats, fun, name) {
     return(extracted)
 }
 
-# prop_covered <- function(x) {
-#     if (class(x) == "data.frame") {
-#         x <- x$value
-#         return(sum(!is.na(x)) / length(x))
-#     } else {
-#         return(sum(!is.na(x)) / length(x))
-#     }
-# }
-
-# domain_rough_bound <- ext(lims)
-
-# Load Midwater Trawl intensity data - need to acquire demersal trawl data - hours of trawling
+# Load Midwater Trawl intensity data - hours of trawling
 mw_intensity <- format_sanbi_raster(
-    "../../Spatial Data/fishing_effort_data/Midwater_Trawl_Intensity/Midwater_Trawl_Intensity/Midwater_Trawl_Intensity_{crs}.tif",
+    glue("../../Spatial Data/fishing_effort_data/Midwater_Trawl_Intensity/Midwater_Trawl_Intensity/Midwater_Trawl_Intensity_{crs}.tif"),
     habitats
 )
 mw_data <- sanbi_proportion_effort(
@@ -107,17 +57,17 @@ ggplot() +
     geom_sf(data = habitats, aes(color = Habitat), alpha = 0.4) +
     scale_fill_viridis_c()
 
-# Load spatial data for nets including small scale
+# Load spatial data for nets - number of rights
 ## Load Gillnets
 gn_intensity <- format_sanbi_raster(
-    "../../Spatial Data/fishing_effort_data/Gill_Netting_Intensity/Gill_Net_Intensity/Gill_Net_Intensity_{crs}.tif",
+    glue("../../Spatial Data/fishing_effort_data/Gill_Netting_Intensity/Gill_Net_Intensity/Gill_Net_Intensity_{crs}.tif"),
     habitats
 )
 gn_intensity <- subst(gn_intensity, NA, 0) # Set NA values to 0 for addition of second layer
 
 ## Load beach seine nets
 bs_intensity <- format_sanbi_raster(
-    "../../Spatial Data/fishing_effort_data/Beach_Seine_Intensity/Beach_seine_Intensity/Beach_Seine_Intensity_{crs}.tif",
+    glue("../../Spatial Data/fishing_effort_data/Beach_Seine_Intensity/Beach_seine_Intensity/Beach_Seine_Intensity_{crs}.tif"),
     habitats
 )
 bs_intensity <- subst(bs_intensity, NA, 0) # Set NA values to 0 for addition of second layer
@@ -132,11 +82,25 @@ ggplot() +
     scale_fill_viridis_c()
 
 # Extract Pole and Line data
-
+tpl_intensity <- format_sanbi_raster(
+    glue("../../Spatial Data/fishing_effort_data/Tuna_Pole_Intensity/Tuna_Pole_Intensity_{crs}.tif"),
+    habitats
+)
+tpl_intensity <- tpl_intensity["Tuna_Pole_Intensity_1"] # Select first band of data containing continuous values
+tpl_data <- sanbi_proportion_effort(
+    tpl_intensity,
+    habitats,
+    "sum",
+    "pole_and_line"
+)
+ggplot() +
+    geom_spatraster(data = tpl_intensity, aes(fill = Tuna_Pole_Intensity_1)) +
+    geom_sf(data = habitats, aes(color = Habitat), alpha = 0.4) +
+    scale_fill_viridis_c()
 
 # Extract Squid Jig data
 sj_intensity <- format_sanbi_raster(
-    "../../Spatial Data/fishing_effort_data/Squid_Intensity/Squid_Intensity/Squid_Fishery_Intensity_{crs}.tif",
+    glue("../../Spatial Data/fishing_effort_data/Squid_Intensity/Squid_Intensity/Squid_Intensity_{crs}.tif"),
     habitats
 )
 sj_data <- sanbi_proportion_effort(
@@ -150,30 +114,72 @@ ggplot() +
     geom_sf(data = habitats, aes(color = Habitat), alpha = 0.4) +
     scale_fill_viridis_c()
 
-# Collate pelagic and demersal longline data from GFW
-longline_data <- gfw_data %>%
-    filter(variable %in% c("ZAF_pelagic_longline", "ZAF_demersal_longline")) %>%
-    group_by(Habitat, Shore) %>%
-    summarise(hours = sum(hours)) %>%
-    mutate(proportion_longline = hours / sum(hours))
-
-# Collate purse seine data from GFW
-purse_seine_data <- gfw_data %>%
-    filter(variable == "ZAF_purse_seine") %>%
-    group_by(Habitat, Shore) %>%
-    summarise(hours = sum(hours)) %>%
-    mutate(proportion_purse_seine = hours / sum(hours))
-
-# Extract Demersal Trawl data (not available from SANBI yet)
-# Need to confirm the format and values of the data are similar to the other SANBI layers
-dt_intensity <- format_sanbi_raster(
-    "../../Spatial Data/fishing_effort_data/Demersal_Trawl_Intensity/Demersal_Trawl_Intensity_{crs}.tif",
+# Collate pelagic and demersal longline data from SANBI layers
+# Load inshore demersal trawl activity
+pll_intensity <- format_sanbi_raster(
+    glue("../../Spatial Data/fishing_effort_data/Pelagic_Longline_Intensity/Pelagic_Longline_Intensity/Pelagic_Longline_Intensity_{crs}.tif"),
     habitats
 )
-dt_data <- sanbi_proportion_effort(dt_intensity, habitats, "sum", "demersal_trawl")
+pll_intensity <- subst(pll_intensity, NA, 0) # Set NA values to 0 for addition of second layer
+
+## Load offshore demersal trawl activity
+dmll_intensity <- format_sanbi_raster(
+    glue("../../Spatial Data/fishing_effort_data/Hake_Longline_Intensity/Hake_Longline_Intensity_{crs}.tif"),
+    habitats
+)
+dmll_intensity <- subst(dmll_intensity, NA, 0) # Set NA values to 0 for addition of second layer
+dmll_intensity <- dmll_intensity["Hake_Longline_Intensity_1"]
+
+longline_intensity <- pll_intensity + dmll_intensity
+longline_intensity <- subst(longline_intensity, 0, NA) # Set 0 values to NA to just extract from regions with effort.
+longline_data <- sanbi_proportion_effort(longline_intensity, habitats, "sum", "longline")
 
 ggplot() +
-    geom_spatraster(data = dt_intensity, aes(fill = OID)) +
+    geom_spatraster(data = longline_intensity, aes(fill = OID)) +
+    geom_sf(data = habitats, aes(color = Habitat), alpha = 0.4) +
+    scale_fill_viridis_c()
+
+# Collate purse seine data from GFW
+smpl_intensity <- format_sanbi_raster(
+    glue("../../Spatial Data/fishing_effort_data/Small_Pelagic_Intensity/Small_Pelagic_Intensity_{crs}.tif"),
+    habitats
+)
+smpl_intensity <- smpl_intensity["Small_Pelagic_Intensity_1"]
+smpl_data <- sanbi_proportion_effort(
+    smpl_intensity,
+    habitats,
+    "sum",
+    "purse_seine"
+)
+ggplot() +
+    geom_spatraster(data = smpl_intensity, aes(fill = Small_Pelagic_Intensity_1)) +
+    geom_sf(data = habitats, aes(color = Habitat), alpha = 0.4) +
+    scale_fill_viridis_c()
+
+# Extract Demersal Trawl data (data separated into inshore and offshore regions)
+# Need to confirm the format and values of the data are similar to the other SANBI layers
+# Load inshore demersal trawl activity
+intr_intensity <- format_sanbi_raster(
+    glue("../../Spatial Data/fishing_effort_data/Demersal_Trawl_Intensity/Trawl_Inshore_Intensity/Trawl_Inshore_Intensity_{crs}.tif"),
+    habitats
+)
+intr_intensity <- subst(intr_intensity, NA, 0) # Set NA values to 0 for addition of second layer
+intr_intensity <- intr_intensity["Trawl_Inshore_Intensity_1"]
+
+## Load offshore demersal trawl activity
+oftr_intensity <- format_sanbi_raster(
+    glue("../../Spatial Data/fishing_effort_data/Demersal_Trawl_Intensity/Trawl_Offshore_Intensity/Trawl_Offshore_Intensity_{crs}.tif"),
+    habitats
+)
+oftr_intensity <- subst(oftr_intensity, NA, 0) # Set NA values to 0 for addition of second layer
+oftr_intensity <- oftr_intensity["Trawl_Offshore_Intensity_1"]
+
+dmtrwl_intensity <- intr_intensity + oftr_intensity
+dmtrwl_intensity <- subst(dmtrwl_intensity, 0, NA) # Set 0 values to NA to just extract from regions with effort.
+dmtrwl_data <- sanbi_proportion_effort(dmtrwl_intensity, habitats, "sum", "demersal_trawl")
+
+ggplot() +
+    geom_spatraster(data = dmtrwl_intensity, aes(fill = Trawl_Inshore_Intensity_1)) +
     geom_sf(data = habitats, aes(color = Habitat), alpha = 0.4) +
     scale_fill_viridis_c()
 
@@ -181,7 +187,7 @@ ggplot() +
 # Commercial West Coast Rock Lobster trapping mainly occurs at depths greater than 100m over rocky habitats.
 # We distribute the effort evenly across rocky habitat areas at depths greater than 100m. This is then used to calculate the proportion of effort across the domain habitat types.
 GEBCO <- rast("../Shared data/GEBCO_2020.nc")
-GEBCO <- crop(GEBCO, round(ext(wcrl_intensity), digits = 3))
+GEBCO <- crop(GEBCO, round(ext(habitats), digits = 3))
 GEBCO[GEBCO > -100] <- NA
 GEBCO[] <- 1
 
@@ -199,13 +205,13 @@ wcrl_data <- mutate(wcrl_data, proportion_West_Coast_Rock_Lobster_traps = West_C
 # Extract recreational fishing gear spatial effort data
 # Combination of linefishery spatial effort and recreational-shore based effort
 rlf_intensity <- format_sanbi_raster(
-    "../../Spatial Data/fishing_effort_data/Linefish_Intensity/Linefish_Intensity/Linefish_Intensity_{crs}.tif",
+    glue("../../Spatial Data/fishing_effort_data/Linefish_Intensity/Linefish_Intensity/Linefish_Intensity_{crs}.tif"),
     habitats
 )
 rlf_intensity <- subst(rlf_intensity, NA, 0)
 
 rsb_intensity <- format_sanbi_raster(
-    "../../Spatial Data/fishing_effort_data/Recreational_Shore_Fishing_Intensity/Recreational_Shore_Fishing_Intensity/Recreational_Shore_Fishing_Intensity_{crs}.tif",
+    glue("../../Spatial Data/fishing_effort_data/Recreational_Shore_Fishing_Intensity/Recreational_Shore_Fishing_Intensity/Recreational_Shore_Fishing_Intensity_{crs}.tif"),
     habitats
 )
 rsb_intensity <- subst(rsb_intensity, NA, 0)
@@ -218,9 +224,14 @@ rec_data <- sanbi_proportion_effort(
     "recreational_fishing_gears"
 )
 
+ggplot() +
+    geom_spatraster(data = rec_intensity, aes(fill = OID)) +
+    geom_sf(data = habitats, aes(color = Habitat), alpha = 0.4) +
+    scale_fill_viridis_c()
+
 # Extract small scale lines spatial effort data
 ssl_intensity <- format_sanbi_raster(
-    "../../Spatial Data/fishing_effort_data/Linefish_Intensity/Linefish_Intensity/Linefish_Intensity_{crs}.tif",
+    glue("../../Spatial Data/fishing_effort_data/Linefish_Intensity/Linefish_Intensity/Linefish_Intensity_{crs}.tif"),
     habitats
 )
 ssl_data <- sanbi_proportion_effort(
@@ -236,43 +247,48 @@ ggplot() +
 
 # Extract subsistence fishing gear spatial effort data
 ssf_intensity <- format_sanbi_raster(
-    "../../Spatial Data/fishing_effort_data/Subsistence_Fishing_Intensity/Subsistence_Fishing_Intensity_{crs}.tif",
+    glue("../../Spatial Data/fishing_effort_data/Subsistence_Harvest_Intensity/Subsistence_Harvest_Intensity_{crs}.tif"),
     habitats
 )
+ssf_intensity <- ssf_intensity["Subsistence_Harvest_Intensity_1"]
 ssf_data <- sanbi_proportion_effort(
     ssf_intensity,
     habitats,
     "sum",
     "subsistence_fishing_gear"
 )
-
-
+ggplot() +
+    geom_spatraster(data = ssf_intensity, aes(fill = Subsistence_Harvest_Intensity_1)) +
+    geom_sf(data = habitats, aes(color = Habitat), alpha = 0.4) +
+    scale_fill_viridis_c()
 
 # Combine spatial activity datasets
 habitat_activity <- habitats %>%
-    # Insert purse seine data
     left_join(., mw_data, by = c("Habitat", "Shore")) %>%
-    left_join(., lf_data, by = c("Habitat", "Shore")) %>%
+    left_join(., net_data, by = c("Habitat", "Shore")) %>%
+    left_join(., tpl_data, by = c("Habitat", "Shore")) %>%
     left_join(., sj_data, by = c("Habitat", "Shore")) %>%
-    left_join(., pll_data, by = c("Habitat", "Shore"))
-# Insert demersal longline data
+    left_join(., longline_data, by = c("Habitat", "Shore")) %>%
+    left_join(., smpl_data, by = c("Habitat", "Shore")) %>%
+    left_join(., dmtrwl_data, by = c("Habitat", "Shore")) %>%
+    left_join(., wcrl_data, by = c("Habitat", "Shore")) %>%
+    left_join(., rec_data, by = c("Habitat", "Shore")) %>%
+    left_join(., ssl_data, by = c("Habitat", "Shore")) %>%
+    left_join(., ssf_data, by = c("Habitat", "Shore"))
 
 habitat_activity <- habitat_activity %>%
-    pivot_longer(cols = !c(Habitat, Shore, geometry), names_to = "gear_type", values_to = "pressure") %>%
-    mutate(pressure = if_else(is.na(pressure), 0, pressure)) %>% # missing data = 0 fishing
-    group_by(gear_type) %>% # Have to group by gear type to sum each row to 1
-    mutate(proportion = pressure / sum(pressure)) %>%
-    ungroup()
+    select(c(Habitat, Shore, contains("proportion"))) %>%
+    pivot_longer(
+        cols = contains("proportion"),
+        names_to = "gear_type",
+        values_to = "proportion"
+    ) %>%
+    mutate(habitat_shore = paste0(Habitat, "_", Shore)) %>%
+    st_drop_geometry()
 
 ggplot() +
-    geom_col(data = habitat_activity, aes(x = Habitat, y = proportion, fill = gear_type)) +
-    facet_wrap(~Shore) +
-    ylab("Proportion of domain-wide effort per year") +
-    theme_minimal()
+    geom_tile(data = habitat_activity, aes(x = habitat_shore, y = gear_type, fill = proportion)) +
+    theme_minimal() +
+    scale_fill_viridis_c()
 
-ggplot() +
-    geom_spatraster(data = mw_intensity, aes(fill = OID), na.rm = TRUE) +
-    scale_fill_viridis_c() +
-    new_scale_fill() +
-    geom_sf(data = habitats, aes(fill = Habitat), alpha = 0.5) +
-    scale_fill_viridis_d(option = "B")
+write.csv(habitat_activity, "./Objects/spatial_activity_proportions_intermediate.csv")
