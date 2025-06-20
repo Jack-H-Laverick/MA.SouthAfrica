@@ -9,38 +9,12 @@ domain <- st_union(domain)
 # Retrieve just the area that SAU uses for the Atlantic and Cape region, which is the intersection between the SA EEZ and the FAO zone 47
 sau_west_area <- read_sf("./Objects/sau_atlantic_cape_region.gpkg")
 
-gfw_polygon_effort <- function(file, polygons) {
-    #' Extracting GFW data for habitat polygons from GFW netcdf files.
-    #'
-    #' File takes a file name containing flag and GFW variable information.
-    #' Calculates the total hours for each year and habitat/shore type.
-    flag <- file %>%
-        str_split_i(pattern = "(?=[-])", i = 1) %>%
-        str_split_i(pattern = "(?<=[_])", i = 3)
-    variable <- file %>%
-        str_split_i(pattern = "([-])", i = 2) %>% # Split to get last section of file name
-        str_split_i(pattern = "([.])", i = 1)
-
-    extracted_data <- rast(glue("./Data/{file}")) %>% # Import a brick of all years
-        exact_extract(polygons, fun = "sum") %>% # Sum fishing hours within habitat types
-        pivot_longer(
-            cols = matches("\\d"),
-            names_to = "year",
-            values_to = "hours"
-        ) %>%
-        mutate(year = as.numeric(str_split_i(year, "(?<=[=])", i = 2))) %>%
-        mutate(variable = glue("{flag}_{variable}")) %>%
-        select(c(year, variable, hours))
-
-    return(extracted_data)
-}
-
 format_sanbi_raster <- function(raster_fn, habitats) {
     #' Format a SANBI 'cumulative stress index' raster into usable values that contain just positive effort.
     raster <- rast(raster_fn)
     raster <- crop(raster, habitats)
     raster <- as.numeric(raster)
-    raster <- subst(raster, 0, NA) # Replace 0 values with NA because there is no fishing in that area.
+    raster <- subst(raster, -200:0, NA) # Replace 0 values with NA because there is no fishing in that area.
 
     return(raster)
 }
@@ -81,10 +55,13 @@ prop_sau_nets <- net_activity_domain / net_activity_sau_area
 
 #
 # Pole and line
-tpl_fn <- glue("../../Spatial Data/fishing_effort_data/Tuna_Pole_Intensity/Tuna_Pole_Intensity/Tuna_Pole_Intensity_{crs}.tif")
+tpl_fn <- glue("../../Spatial Data/fishing_effort_data/Tuna_Pole_Intensity/Tuna_Pole_Intensity_{crs}.tif")
 tpl_intensity_domain <- format_sanbi_raster(tpl_fn, domain)
+tpl_intensity_domain <- tpl_intensity_domain["Tuna_Pole_Intensity_1"]
 tpl_activity_domain <- global(tpl_intensity_domain, fun = "sum", na.rm = TRUE)
+
 tpl_intensity_sau_area <- format_sanbi_raster(tpl_fn, sau_west_area)
+tpl_intensity_sau_area <- tpl_activity_sau_area["Tuna_Pole_Intensity"]
 tpl_activity_sau_area <- global(tpl_intensity_sau_area, fun = "sum", na.rm = TRUE)
 
 prop_sau_tpl <- tpl_activity_domain / tpl_activity_sau_area
@@ -101,51 +78,68 @@ prop_sau_sj <- sj_activity_domain / sj_activity_sau_area
 
 #
 # Longline
-domain_longline_data <- data.table::rbindlist(list(
-    gfw_polygon_effort("fleet_fishing_ZAF-demersal_longline_domain.nc", domain),
-    gfw_polygon_effort("fleet_fishing_ZAF-pelagic_longline_domain.nc", domain)
-)) %>%
-    group_by(year) %>%
-    summarise(hours = sum(hours)) %>%
-    ungroup() %>%
-    summarise(hours = mean(hours))
+pll_fn <- glue("../../Spatial Data/fishing_effort_data/Pelagic_Longline_Intensity/Pelagic_Longline_Intensity/Pelagic_Longline_Intensity_{crs}.tif")
+dmll_fn <- glue("../../Spatial Data/fishing_effort_data/Hake_Longline_Intensity/Hake_Longline_Intensity_{crs}.tif")
 
-sau_longline_data <- data.table::rbindlist(list(
-    gfw_polygon_effort("fleet_fishing_ZAF-demersal_longline_sau_area.nc", sau_west_area),
-    gfw_polygon_effort("fleet_fishing_ZAF-pelagic_longline_sau_area.nc", sau_west_area)
-)) %>%
-    group_by(year) %>%
-    summarise(hours = sum(hours)) %>%
-    ungroup() %>%
-    summarise(hours = mean(hours))
+pll_intensity_domain <- format_sanbi_raster(pll_fn, domain)
+pll_intensity_domain <- subst(pll_intensity_domain, NA, 0) # Set NA values to 0 for addition of second layer
+dmll_intensity_domain <- format_sanbi_raster(dmll_fn, domain)
+dmll_intensity_domain <- dmll_intensity_domain["Hake_Longline_Intensity_1"]
+dmll_intensity_domain <- subst(dmll_intensity_domain, NA, 0) # Set NA values to 0 for addition of second layer
 
-prop_sau_longline <- as.numeric(domain_longline_data / sau_longline_data)
+ll_intensity_domain <- pll_intensity_domain + dmll_intensity_domain
+ll_activity_domain <- global(ll_intensity_domain, fun = "sum", na.rm = TRUE)
+
+pll_intensity_sau_area <- format_sanbi_raster(pll_fn, sau_west_area)
+pll_intensity_sau_area <- subst(pll_intensity_sau_area, NA, 0) # Set NA values to 0 for addition of second layer
+dmll_intensity_sau_area <- format_sanbi_raster(dmll_fn, sau_west_area)
+dmll_intensity_sau_area <- dmll_intensity_sau_area["Hake_Longline_Intensity_1"]
+dmll_intensity_sau_area <- subst(dmll_intensity_sau_area, NA, 0) # Set NA values to 0 for addition of second layer
+
+ll_intensity_sau_area <- pll_intensity_sau_area + dmll_intensity_sau_area
+ll_activity_sau_area <- global(ll_intensity_sau_area, fun = "sum", na.rm = TRUE)
+
+prop_sau_longline <- ll_activity_domain / ll_activity_sau_area
 
 #
 # Purse seine
-domain_purse_seine_data <- gfw_polygon_effort("fleet_fishing_ZAF-purse_seine_domain.nc", domain) %>%
-    group_by(year) %>%
-    summarise(hours = sum(hours)) %>%
-    ungroup() %>%
-    summarise(hours = mean(hours))
+ps_fn <- glue("../../Spatial Data/fishing_effort_data/Small_Pelagic_Intensity/Small_Pelagic_Intensity_{crs}.tif")
 
-sau_purse_seine_data <- gfw_polygon_effort("fleet_fishing_ZAF-purse_seine_sau_area.nc", sau_west_area) %>%
-    group_by(year) %>%
-    summarise(hours = sum(hours)) %>%
-    ungroup() %>%
-    summarise(hours = mean(hours))
+ps_intensity_domain <- format_sanbi_raster(ps_fn, domain)
+ps_intensity_domain <- ps_intensity_domain["Small_Pelagic_Intensity_1"]
+ps_activity_domain <- global(ps_intensity_domain, fun = "sum", na.rm = TRUE)
+ps_intensity_sau_area <- format_sanbi_raster(ps_fn, sau_west_area)
+ps_intensity_sau_area <- ps_intensity_sau_area["Small_Pelagic_Intensity_1"]
+ps_activity_sau_area <- global(ps_intensity_sau_area, fun = "sum", na.rm = TRUE)
 
-prop_sau_purse_seine <- as.numeric(domain_purse_seine_data / sau_purse_seine_data)
+prop_sau_ps <- ps_activity_domain / ps_activity_sau_area
 
 #
 # Demersal trawl
-dmt_fn <- glue("../../Spatial Data/fishing_effort_data/Demersal_Trawl_Intensity/Demersal_Trawl_Intensity/Demersal_Trawl_Intensity_{crs}.tif")
-dmt_intensity_domain <- format_sanbi_raster(dmt_fn, domain)
-dmt_activity_domain <- global(dmt_intensity_domain, fun = "sum", na.rm = TRUE)
-dmt_intensity_sau_area <- format_sanbi_raster(dmt_fn, sau_west_area)
-dmt_activity_sau_area <- global(dmt_intensity_sau_area, fun = "sum", na.rm = TRUE)
+intrwl_fn <- glue("../../Spatial Data/fishing_effort_data/Demersal_Trawl_Intensity/Trawl_Inshore_Intensity/Trawl_Inshore_Intensity_{crs}.tif")
+dmll_fn <- glue("../../Spatial Data/fishing_effort_data/Demersal_Trawl_Intensity/Trawl_Offshore_Intensity/Trawl_Offshore_Intensity_{crs}.tif")
 
-prop_sau_dmt <- dmt_activity_domain / dmt_activity_sau_area
+intrwl_intensity_domain <- format_sanbi_raster(intrwl_fn, domain)
+intrwl_intensity_domain <- intrwl_intensity_domain["Trawl_Inshore_Intensity_1"]
+intrwl_intensity_domain <- subst(intrwl_intensity_domain, NA, 0) # Set NA values to 0 for addition of second layer
+oftrwl_intensity_domain <- format_sanbi_raster(oftrwl_fn, domain)
+oftrwl_intensity_domain <- oftrwl_intensity_domain["Trawl_Offshore_Intensity_1"]
+oftrwl_intensity_domain <- subst(oftrwl_intensity_domain, NA, 0) # Set NA values to 0 for addition of second layer
+
+dmtrwl_intensity_domain <- intrwl_intensity_domain + oftrwl_intensity_domain
+dmtrwl_activity_domain <- global(dmtrwl_intensity_domain, fun = "sum", na.rm = TRUE)
+
+intrwl_intensity_sau_area <- format_sanbi_raster(intrwl_fn, sau_west_area)
+intrwl_intensity_sau_area <- intrwl_intensity_sau_area["Trawl_Inshore_Intensity_1"]
+intrwl_intensity_sau_area <- subst(intrwl_intensity_sau_area, NA, 0) # Set NA values to 0 for addition of second layer
+oftrwl_intensity_sau_area <- format_sanbi_raster(oftrwl_fn, sau_west_area)
+oftrwl_intensity_sau_area <- oftrwl_intensity_sau_area["Trawl_Offshore_Intensity_1"]
+oftrwl_intensity_sau_area <- subst(oftrwl_intensity_sau_area, NA, 0) # Set NA values to 0 for addition of second layer
+
+dmtrwl_intensity_sau_area <- intrwl_intensity_sau_area + oftrwl_intensity_sau_area
+dmtrwl_activity_sau_area <- global(dmtrwl_intensity_sau_area, fun = "sum", na.rm = TRUE)
+
+prop_sau_dmtrwl <- dmtrwl_activity_domain / dmtrwl_activity_sau_area
 
 # West Coast Rock Lobster traps
 # Assume that all West Coast Rock Lobster traps occurs within the domain as the South Coast Rock Lobster dominates the southern coast of South Africa
@@ -185,36 +179,27 @@ prop_sau_ssl <- ssl_activity_domain / ssl_activity_sau_area
 
 #
 # Subsistence fishing gear
-ssf_fn <- glue("../../Spatial Data/fishing_effort_data/Subsistence_Fishing_Intensity/Subsistence_Fishing_Intensity_{crs}.tif")
+ssf_fn <- glue("../../Spatial Data/fishing_effort_data/Subsistence_Harvest_Intensity/Subsistence_Harvest_Intensity_{crs}.tif")
 ssf_intensity_domain <- format_sanbi_raster(ssf_fn, domain)
+ssf_intensity_domain <- ssf_intensity_domain["Subsistence_Harvest_Intensity_1"]
 ssf_activity_domain <- global(ssf_intensity_domain, fun = "sum", na.rm = TRUE)
 ssf_intensity_sau_area <- format_sanbi_raster(ssf_fn, sau_west_area)
+ssf_intensity_sau_area <- ssf_intensity_sau_area["Subsistence_Harvest_Intensity_1"]
 ssf_activity_sau_area <- global(ssf_intensity_sau_area, fun = "sum", na.rm = TRUE)
 
 prop_sau_ssf <- ssf_activity_domain / ssf_activity_sau_area
 
 prop_sau_activity <- data.frame(
-    gear_type = c(
-        "MWT" = "midwater trawl",
-        "NTS" = "nets including small scale",
-        "TPL" = "pole and line",
-        "SJ" = "squid jig",
-        "LL" = "longline",
-        "PS" = "purse seine",
-        "DMT" = "demersal trawl",
-        "WCRLT" = "WC Rock Lobster traps",
-        "RFG" = "recreational fishing gear",
-        "SSL" = "small scale lines",
-        "SBF" = "subsistence fishing gear"
-    ),
+    Gear_name = strathe2e_gear_types,
+    Gear_code = gear_codes,
     proportion_sau_activity_in_domain = c(
         prop_sau_mw,
         prop_sau_nets,
         prop_sau_tpl,
         prop_sau_sj,
-        prop_sau_longline,
-        prop_sau_purse_seine,
-        prop_sau_dmt,
+        prop_sau_ll,
+        prop_sau_ps,
+        prop_sau_dmtrwl,
         prop_sau_wcrl,
         prop_sau_rec,
         prop_sau_ssl,
