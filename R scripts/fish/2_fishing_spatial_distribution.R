@@ -8,6 +8,7 @@ library(tidyterra)
 library(exactextractr)
 
 source("./R scripts/@_Region file.R")
+source("./R Scripts/@_model_config.R")
 
 # Load habitat map
 habitats <- readRDS("./Objects/Habitats.rds")
@@ -291,4 +292,42 @@ ggplot() +
     theme_minimal() +
     scale_fill_viridis_c()
 
-write.csv(habitat_activity, "./Objects/spatial_activity_proportions_intermediate.csv")
+habitat_activity_final <- habitat_activity %>%
+    mutate(
+        strathe2e_habitat = case_when(
+            habitat_shore == "rock_Inshore" ~ "Habitat_s0",
+            habitat_shore == "gravel_Inshore" ~ "Habitat_s3",
+            habitat_shore == "sand_Inshore" ~ "Habitat_s2",
+            habitat_shore == "mud_Inshore" ~ "Habitat_s1",
+            habitat_shore == "rock_Offshore" ~ "Habitat_d0",
+            habitat_shore == "gravel_Offshore" ~ "Habitat_d3",
+            habitat_shore == "sand_Offshore" ~ "Habitat_d2",
+            habitat_shore == "mud_Offshore" ~ "Habitat_d1"
+        )
+    ) %>%
+    pivot_wider(
+        id_cols = c(gear_type),
+        names_from = strathe2e_habitat,
+        values_from = proportion
+    ) %>%
+    mutate(
+        Gear_code = case_when(
+            gear_type == "proportion_midwater_trawl" ~ "MWT",
+            gear_type == "proportion_nets" ~ "NTS",
+            gear_type == "proportion_pole_and_line" ~ "TPL",
+            gear_type == "proportion_squid_jig" ~ "SJ",
+            gear_type == "proportion_longline" ~ "LL",
+            gear_type == "proportion_purse_seine" ~ "PS",
+            gear_type == "proportion_demersal_trawl" ~ "DMT",
+            gear_type == "proportion_West_Coast_Rock_Lobster_traps" ~ "WCRLT",
+            gear_type == "proportion_recreational_fishing_gears" ~ "RFG",
+            gear_type == "proportion_small_scale_lines" ~ "SSL",
+            gear_type == "proportion_subsistence_fishing_gear" ~ "SBF"
+        )
+    )
+
+habitat_activity_final$Gear_name <- strathe2e_gear_types[habitat_activity_final$Gear_code]
+habitat_activity_final <- habitat_activity_final %>%
+    select(c(Gear_name, Gear_code, Habitat_s0, Habitat_s1, Habitat_s2, Habitat_s3, Habitat_d0, Habitat_d1, Habitat_d2, Habitat_d3))
+
+write.csv(habitat_activity_final, glue("./Objects/fishing_distribution_{domain_name}_{start_year}-{end_year}.csv"), row.names = FALSE)
