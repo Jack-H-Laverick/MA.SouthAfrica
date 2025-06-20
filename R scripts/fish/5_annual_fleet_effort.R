@@ -1,19 +1,18 @@
 packages <- c("ggplot2", "arrow", "tidyverse", "glue", "tabulapdf", "gganimate", "randomcoloR", "terra", "arrow", "blogdown")
 sapply(packages, library, character.only = TRUE)
 options(dplyr.summarise.inform = FALSE)
-source("./R Scripts/@_Region file.R")
-habitats <- readRDS("./Objects/Habitats.rds")
 
-year_config <- read_toml("./R scripts/config.toml")
-start_year <- year_config$start_year
-end_year <- year_config$end_year
+source("./R Scripts/@_Region file.R")
+source("./R Scripts/@_model_config.R")
+
+habitats <- readRDS("./Objects/Habitats.rds")
 
 # Midwater Trawl
 # Effort data for the Midwater Trawl fishing fleet comes from Reed et al. (2017). This fleet mainly consists of one large trawler vessel performing the majority of midwater trawls in South Africa.
 # The midwater trawl fishery extends east from 22 degrees East. This means that most of the fleet's effort likely doesn't occur within the Southern Benguela model habitat domain. To get a more accurate estimate of effort we need to scale the total effort estimate by the proportion of effort occurring within the domain area.
 
 # Reed J, Kerwath S.E., Attwood C. (2017). Analysis of bycatch in the South African midwater trawl fishery for horse mackerel *Trachurus capensis* based on observer data.
-mw_intensity <- "../../Spatial Data/fishing_effort_data/Midwater_Trawl_Intensity/Midwater_Trawl_Intensity/Midwater_Trawl_Intensity_{crs}.tif"
+mw_intensity <- glue("../../Spatial Data/fishing_effort_data/Midwater_Trawl_Intensity/Midwater_Trawl_Intensity/Midwater_Trawl_Intensity_{crs}.tif")
 mw_intensity <- rast(mw_intensity)
 mw_intensity <- as.numeric(mw_intensity)
 
@@ -54,6 +53,7 @@ prop_sj_in_domain <- exact_extract(sj_intensity, habitats, fun = "sum")
 prop_sj_in_domain <- sum(prop_sj_in_domain) / total_spatial_sj_intensity
 
 annual_sj_effort <- 138 * prop_sj_in_domain # Number of vessels in domain
+annual_sj_effort <- annual_sj_effort[1, 1]
 
 # Longlines
 # Activity data for the pelagic longline fishery are taken from Parker et al. (2021). This report contains data on the number of hooks used in the pelagic longline sector from 2010 to 2019. These data are used to calculate an annual average activity, which is combined with spatial data to get an activity estimate for the Southern Benguela domain.
@@ -74,6 +74,7 @@ annual_pll_effort <- annual_pll_effort * prop_pll_in_domain # Number of hooks in
 annual_dll_effort <- mean(c(1176, 1311, 1751, 2153, 2860, 3136, 3113, 2885, 2761, 2700)) * 14000 # Annual demersal longline effort in number of hooks (assuming each set has 14,000 hooks).
 
 annual_longline_effort <- annual_pll_effort + annual_dll_effort
+annual_longline_effort <- annual_longline_effort[1, 1]
 
 # Purse Seine
 # Activity data for the purse seine fishery are taken from Global Fishing Watch data. These data have been collated to the number of total hours per fleet per year. This data is then extracted for the habitat domain and the average annual hours for each habitat are summed to the domain level.
@@ -104,7 +105,7 @@ gfw_polygon_extraction <- function(file, polygons) {
 }
 
 # Extract the total yearly effort in hours for each habitat/shore area and variable
-gfw_data <- gfw_polygon_extraction("fleet_fishing_ZAF-purse_seine.nc", habitats)
+gfw_data <- gfw_polygon_extraction("fleet_fishing_ZAF-purse_seine_domain.nc", habitats)
 # For each variable, calculate the proportion of effort distributed to each habitat/shore type
 gfw_data <- group_by(gfw_data, year) %>%
     summarise(hours = sum(hours)) # %>%
@@ -132,4 +133,29 @@ annual_marine_rec_effort <- 547799 * 0.18 # Number of fishers
 annual_ssl_effort <- 7200 * 0.85
 
 # Subsistence fishing gear
-#
+annual_ssf_effort <- 458 + 643 + 1272 # Number of fishers from Clark et al. 2002. Subsistence fishing surveys from zones A-C (roughly matching model domain).
+
+annual_effort_gears <- data.frame(
+    Gear_name = strathe2e_gear_types,
+    Gear_code = gear_codes,
+    Activity_.s.m2.d. = c(
+        annual_mw_effort,
+        annual_net_effort,
+        annual_pole_and_line_effort,
+        annual_sj_effort,
+        annual_longline_effort,
+        annual_purse_seine_effort,
+        annual_demt_effort,
+        annual_wcrl_effort,
+        annual_marine_rec_effort,
+        annual_ssl_effort,
+        annual_ssf_effort
+    ),
+    Plough_rate_.m2.s. = rep(0, length(strathe2e_gear_types))
+)
+
+# Need to convert values to seconds/time based units
+# Need to ask about plough rate
+# Need to calculate
+
+write.csv(annual_effort_gears, glue("./Objects/fishing_activity_{domain_name}_{start_year}-{end_year}"))
