@@ -1,7 +1,10 @@
 library(arrow)
 library(sf)
 
+source("./R Scripts/@_model_config.R")
+
 domain_size <- readRDS("./Objects/Domains.rds") %>% # We need landings as tonnes per m^2
+    st_transform(crs = 9822) %>%
     sf::st_union() %>%
     sf::st_area() %>%
     as.numeric()
@@ -14,25 +17,19 @@ prop_sau_activity_in_domain <- read.csv("./Objects/proportion_sau_activity_in_do
     rename(gear_type_se2e = Gear_name)
 
 # Landings
-landings <- read_parquet("./Objects/sau_landings_strath_gears.parq")
-discards <- read_parquet("./Objects/sau_discards_strath_gears.parq")
+landings <- read_parquet("./Objects/sau_landings_strath_gears.parq") %>%
+    filter(gear_type_se2e != "other gears")
+discards <- read_parquet("./Objects/sau_discards_strath_gears.parq") %>%
+    filter(gear_type_se2e != "other gears")
 
 # Combine landings and discards into total catch
 catch <- rbind(landings, discards) %>%
-    leftjoin(prop_sau_activity_in_domain, by = gear_type_se2e) %>%
-    mutate(tonnes = tonnes * prop_sau_activity_in_domain) %>% # Scale catch tonnes by the proportion of SAU-area effort of each gear in domain
+    left_join(prop_sau_activity_in_domain[, c("gear_type_se2e", "proportion_sau_activity_in_domain")], by = "gear_type_se2e") %>%
+    mutate(tonnes = tonnes * proportion_sau_activity_in_domain) %>% # Scale catch tonnes by the proportion of SAU-area effort of each gear in domain
     group_by(year, gear_type_se2e, Guild) %>%
     summarise(annual_total_tonnes = sum(tonnes)) %>% # Calculate total annual catch for each gear type and guild
     group_by(gear_type_se2e, Guild) %>%
-    summarise(annual_average_tonnes = mean(annual_total_tonnes)) %>% # Calculate annual average
-    filter(gear_type_se2e != "other gears")
-
-catch_matrix_data <- expand.grid(
-    Guild = strathe2e_guilds,
-    gear_type_se2e = strathe2e_gear_types
-) %>%
-    left_join(., catch[, c("gear_type_se2e", "Guild", "annual_average_tonnes")], by = c("gear_type_se2e", "Guild")) %>%
-    filter(Guild != "NA" & Guild != "")
+    summarise(annual_average_tonnes = mean(annual_total_tonnes)) # Calculate annual average for each gear and guild
 
 # Add longline (pelagic and longline) bird landings data (catch for birds from longlines are added to landings because birds are taken to port in this fishery)
 # Data values taken from Rollinson et al (2017). Patterns and trends in seabird bycatch in the pelagic longline fishery off South Africa (over 8 years).
@@ -54,7 +51,7 @@ additional_bird_longline <- c(
     ((45 / 8) + (18 / 7)) * 2.643 # 45 (pelagic longline) Morus capensis (Rollinson et al. 2017). 18 (demersal longline) (Peterson et al. 2009)
 )
 additional_bird_longline <- sum(additional_bird_longline) / 1000 # Convert to tonnes from kg
-catch_matrix_data[catch_matrix_data$Guild == "Birds" & catch_matrix_data$gear_type_se2e == "longline", ]$annual_average_tonnes <- additional_bird_longline
+additional_bird_longline <- additional_bird_longline / 0.6 # Calculate total bird catch for longlines assuming 40% is discarded
 
 # Add demersal trawl seabird catch data (assumed that birds are most often killed during waste dumping and are not kept to bring to port, thus discard rate = 1).
 # Data values taken from Watkins et al. (2008). Interactions between seabirds and deep-water hake trawl gear: an assessment of impacts in south African waters.
@@ -67,23 +64,38 @@ additional_bird_demersal_trawl <- c(
     1 * 0.787, # 1 Ardenna grisea (Watkins et al. 2008)
     1 * 1.65 # 1 Stercorarius antarcticus (Watkins et al. 2008)
 )
-catch_matrix_data[catch_matrix_data$Guild == "Birds" & catch_matrix_data$gear_type_se2e == "demersal trawl", ]$annual_average_tonnes <- sum(additional_bird_demersal_trawl) / 1000
+additional_bird_demersal_trawl <- sum(additional_bird_demersal_trawl) / 1000
+
+catch <- rbind(
+    catch,
+    data.frame(
+        gear_type_se2e = c("longline", "demersal trawl"),
+        Guild = c("Birds", "Birds"),
+        annual_average_tonnes = c(additional_bird_longline, additional_bird_demersal_trawl)
+    )
+)
+
+catch_matrix_data <- expand.grid(
+    Guild = strathe2e_guilds,
+    gear_type_se2e = strathe2e_gear_types
+) %>%
+    left_join(., catch[, c("gear_type_se2e", "Guild", "annual_average_tonnes")], by = c("gear_type_se2e", "Guild")) %>%
+    filter(Guild != "NA" & Guild != "")
 
 ggplot() +
     geom_tile(data = catch_matrix_data, aes(x = gear_type_se2e, y = Guild, fill = log(annual_average_tonnes))) +
     scale_fill_viridis_c()
 
 # Discards
-discards <- discards %>%
-    leftjoin(prop_sau_activity_in_domain, by = gear_type_se2e) %>%
-    mutate(tonnes = tonnes * prop_sau_activity_in_domain) %>% # Scale discards tonnes by the proportion of SAU-area effort of each gear in domain
-    group_by(gear_type_se2e, Guild, year) %>%
-    summarise(annual_total_tonnes = sum(tonnes)) %>% # Calculate total annual discards for each gear type and guild
+processed_discards <- discards %>%
+    left_join(prop_sau_activity_in_domain[, c("gear_type_se2e", "proportion_sau_activity_in_domain")], by = "gear_type_se2e") %>%
+    mutate(tonnes = tonnes * proportion_sau_activity_in_domain) %>% # Scale catch tonnes by the proportion of SAU-area effort of each gear in domain
+    group_by(year, gear_type_se2e, Guild) %>%
+    summarise(annual_total_tonnes = sum(tonnes)) %>% # Calculate total annual catch for each gear type and guild
     group_by(gear_type_se2e, Guild) %>%
-    summarise(annual_average_discards_tonnes = mean(annual_total_tonnes)) %>% # Calculate annual average
-    filter(gear_type_se2e != "other gears")
+    summarise(annual_average_discards_tonnes = mean(annual_total_tonnes))
 
-discard_rates <- left_join(catch, discards, by = c(gear_type_se2e, Guild)) %>%
+discard_rates <- left_join(catch, processed_discards, by = c("gear_type_se2e", "Guild")) %>%
     mutate(annual_average_discard_rate = annual_average_discards_tonnes / annual_average_tonnes) %>% # Calculate discard rates as a proportion of total catch tonnes
     select(c(gear_type_se2e, Guild, annual_average_discard_rate))
 
@@ -103,21 +115,21 @@ discards_matrix_data[discards_matrix_data$Guild == "Birds" & discards_matrix_dat
 discards_matrix_data[discards_matrix_data$Guild == "Birds" & discards_matrix_data$gear_type_se2e == "demersal trawl", ]$annual_average_discard_rate <- 1
 
 ggplot() +
-    geom_tile(data = discards_matrix_data, aes(x = gear_type_se2e, y = Guild, fill = tonnes)) +
+    geom_tile(data = discards_matrix_data, aes(x = gear_type_se2e, y = Guild, fill = annual_average_discard_rate)) +
     scale_fill_viridis_c()
-ggplot() +
-    geom_tile(data = discards_matrix_data, aes(x = gear_type_se2e, y = Guild, fill = log(tonnes))) +
-    scale_fill_viridis_c()
+
 
 # Output final matrix files
 catch_power_data <- catch_matrix_data %>%
-    mutate(Gear_code = names(strathe2e_gear_types)[match(strathe2e_gear_types, )]) %>%
-    mutate(Guild_code = names(strathe2e_guilds)[match(strathe2e_guilds, )]) %>%
+    mutate(Gear_code = names(strathe2e_gear_types)[match(gear_type_se2e, strathe2e_gear_types)]) %>%
+    mutate(Guild_code = names(strathe2e_guilds)[match(Guild, strathe2e_guilds)]) %>%
     left_join(annual_effort_gears[, c("Gear_code", "Activity_.s.m2.d.")], by = "Gear_code") %>% # Attach activity rates for each gear
-    mutate(power = annual_average_tonnes / annual_effort_gears) %>% # Convert catch tonnes to catching power
+    mutate(power = annual_average_tonnes / Activity_.s.m2.d.) %>% # Convert catch tonnes to catching power
     mutate(Guild_nitrogen = mMNpergWW[Guild_code]) %>%
     mutate(power = power * Guild_nitrogen) %>% # Convert catch power from t/activity to mMNpergWW/activity for each guild
+    rename(Gear_name = gear_type_se2e) %>%
     select(Gear_name, Gear_code, Guild_code, power) %>%
+    mutate(power = ifelse(is.na(power), 0, power)) %>% # Replace NA values with 0s
     pivot_wider(
         id_cols = c(Gear_name, Gear_code),
         names_from = Guild_code,
@@ -126,10 +138,12 @@ catch_power_data <- catch_matrix_data %>%
     )
 write.csv(catch_power_data, "./Objects/fishing_power_{domain_name}_{start_year}-{end_year}.csv", row.names = FALSE)
 
-discards_rates_data <- discards_rates_data %>%
-    mutate(Gear_code = names(strathe2e_gear_types)[match(strathe2e_gear_types, )]) %>%
-    mutate(Guild_code = names(strathe2e_guilds)[match(strathe2e_guilds, )]) %>%
+discards_rates_data <- discards_matrix_data %>%
+    mutate(Gear_code = names(strathe2e_gear_types)[match(gear_type_se2e, strathe2e_gear_types)]) %>%
+    mutate(Guild_code = names(strathe2e_guilds)[match(Guild, strathe2e_guilds)]) %>%
+    rename(Gear_name = gear_type_se2e) %>%
     select(Gear_name, Gear_code, Guild_code, annual_average_discard_rate) %>%
+    mutate(annual_average_discard_rate = ifelse(is.na(annual_average_discard_rate), 0, annual_average_discard_rate)) %>%
     pivot_wider(
         id_cols = c(Gear_name, Gear_code),
         names_from = Guild_code,
@@ -138,10 +152,14 @@ discards_rates_data <- discards_rates_data %>%
     )
 write.csv(discards_rates_data, "./Objects/fishing_discards_{domain_name}_{start_year}-{end_year}.csv", row.names = FALSE)
 
-discard_weight_target <- discards %>%
-    mutate(Gear_code = names(strathe2e_gear_types)[match(strathe2e_gear_types, )]) %>%
-    mutate(Guild_code = names(strathe2e_guilds)[match(strathe2e_guilds, )]) %>%
+discard_weight_target <- discards_matrix_data %>%
+    left_join(catch_matrix_data, by = c("Guild", "gear_type_se2e")) %>%
+    mutate(Gear_code = names(strathe2e_gear_types)[match(gear_type_se2e, strathe2e_gear_types)]) %>%
+    mutate(Guild_code = names(strathe2e_guilds)[match(Guild, strathe2e_guilds)]) %>%
+    mutate(annual_average_discard_tonnes = annual_average_discard_rate * annual_average_tonnes) %>%
+    rename(Gear_name = gear_type_se2e) %>%
     select(Gear_name, Gear_code, Guild_code, annual_average_discard_tonnes) %>%
+    mutate(annual_average_discard_rate = ifelse(is.na(annual_average_discard_tonnes), 0, annual_average_discard_tonnes)) %>%
     pivot_wider(
         id_cols = c(Gear_name, Gear_code),
         names_from = Guild_code,

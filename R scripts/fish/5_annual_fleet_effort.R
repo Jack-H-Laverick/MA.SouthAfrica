@@ -158,4 +158,4 @@ annual_effort_gears <- data.frame(
 # Need to ask about plough rate
 # Need to calculate
 
-write.csv(annual_effort_gears, glue("./Objects/fishing_activity_{domain_name}_{start_year}-{end_year}"))
+write.csv(annual_effort_gears, glue("./Objects/fishing_activity_{domain_name}_{start_year}-{end_year}.csv"))
