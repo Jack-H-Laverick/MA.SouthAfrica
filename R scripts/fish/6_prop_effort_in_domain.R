@@ -30,6 +30,7 @@ mw_intensity_sau_area <- format_sanbi_raster(mw_intensity_fn, sau_west_area)
 mw_activity_sau_area <- global(mw_intensity_sau_area, fun = "sum", na.rm = TRUE)
 
 prop_sau_mw <- mw_activity_domain / mw_activity_sau_area
+prop_sau_mw <- prop_sau_mw[1, 1]
 
 #
 # Nets including small scale
@@ -52,6 +53,7 @@ net_intensity_sau_area <- gn_intensity_sau_area + bs_intensity_sau_area
 net_activity_sau_area <- global(net_intensity_sau_area, fun = "sum", na.rm = TRUE)
 
 prop_sau_nets <- net_activity_domain / net_activity_sau_area
+prop_sau_nets <- prop_sau_nets[1, 1]
 
 #
 # Pole and line
@@ -61,20 +63,22 @@ tpl_intensity_domain <- tpl_intensity_domain["Tuna_Pole_Intensity_1"]
 tpl_activity_domain <- global(tpl_intensity_domain, fun = "sum", na.rm = TRUE)
 
 tpl_intensity_sau_area <- format_sanbi_raster(tpl_fn, sau_west_area)
-tpl_intensity_sau_area <- tpl_activity_sau_area["Tuna_Pole_Intensity"]
+tpl_intensity_sau_area <- tpl_intensity_sau_area["Tuna_Pole_Intensity_1"]
 tpl_activity_sau_area <- global(tpl_intensity_sau_area, fun = "sum", na.rm = TRUE)
 
 prop_sau_tpl <- tpl_activity_domain / tpl_activity_sau_area
+prop_sau_tpl <- prop_sau_tpl[1, 1]
 
 #
 # Squid jig
-sj_fn <- glue("../../Spatial Data/fishing_effort_data/Squid_Intensity/Squid_Intensity/Squid_Fishery_Intensity_{crs}.tif")
+sj_fn <- glue("../../Spatial Data/fishing_effort_data/Squid_Intensity/Squid_Intensity/Squid_Intensity_{crs}.tif")
 sj_intensity_domain <- format_sanbi_raster(sj_fn, domain)
 sj_activity_domain <- global(sj_intensity_domain, fun = "sum", na.rm = TRUE)
 sj_intensity_sau_area <- format_sanbi_raster(sj_fn, sau_west_area)
 sj_activity_sau_area <- global(sj_intensity_sau_area, fun = "sum", na.rm = TRUE)
 
 prop_sau_sj <- sj_activity_domain / sj_activity_sau_area
+prop_sau_sj <- prop_sau_sj[1, 1]
 
 #
 # Longline
@@ -100,6 +104,7 @@ ll_intensity_sau_area <- pll_intensity_sau_area + dmll_intensity_sau_area
 ll_activity_sau_area <- global(ll_intensity_sau_area, fun = "sum", na.rm = TRUE)
 
 prop_sau_longline <- ll_activity_domain / ll_activity_sau_area
+prop_sau_longline <- prop_sau_longline[1, 1]
 
 #
 # Purse seine
@@ -113,11 +118,12 @@ ps_intensity_sau_area <- ps_intensity_sau_area["Small_Pelagic_Intensity_1"]
 ps_activity_sau_area <- global(ps_intensity_sau_area, fun = "sum", na.rm = TRUE)
 
 prop_sau_ps <- ps_activity_domain / ps_activity_sau_area
+prop_sau_ps <- prop_sau_ps[1, 1]
 
 #
 # Demersal trawl
 intrwl_fn <- glue("../../Spatial Data/fishing_effort_data/Demersal_Trawl_Intensity/Trawl_Inshore_Intensity/Trawl_Inshore_Intensity_{crs}.tif")
-dmll_fn <- glue("../../Spatial Data/fishing_effort_data/Demersal_Trawl_Intensity/Trawl_Offshore_Intensity/Trawl_Offshore_Intensity_{crs}.tif")
+oftrwl_fn <- glue("../../Spatial Data/fishing_effort_data/Demersal_Trawl_Intensity/Trawl_Offshore_Intensity/Trawl_Offshore_Intensity_{crs}.tif")
 
 intrwl_intensity_domain <- format_sanbi_raster(intrwl_fn, domain)
 intrwl_intensity_domain <- intrwl_intensity_domain["Trawl_Inshore_Intensity_1"]
@@ -140,6 +146,7 @@ dmtrwl_intensity_sau_area <- intrwl_intensity_sau_area + oftrwl_intensity_sau_ar
 dmtrwl_activity_sau_area <- global(dmtrwl_intensity_sau_area, fun = "sum", na.rm = TRUE)
 
 prop_sau_dmtrwl <- dmtrwl_activity_domain / dmtrwl_activity_sau_area
+prop_sau_dmtrwl <- prop_sau_dmtrwl[1, 1]
 
 # West Coast Rock Lobster traps
 # Assume that all West Coast Rock Lobster traps occurs within the domain as the South Coast Rock Lobster dominates the southern coast of South Africa
@@ -166,6 +173,7 @@ rec_intensity_sau_area <- rlf_intensity_sau_area + rsb_intensity_sau_area
 rec_activity_sau_area <- global(rec_intensity_sau_area, fun = "sum", na.rm = TRUE)
 
 prop_sau_rec <- rec_activity_domain / rec_activity_sau_area
+prop_sau_rec <- prop_sau_rec[1, 1]
 
 #
 # Small scale lines
@@ -176,6 +184,7 @@ ssl_intensity_sau_area <- format_sanbi_raster(ssl_fn, sau_west_area)
 ssl_activity_sau_area <- global(ssl_intensity_sau_area, fun = "sum", na.rm = TRUE)
 
 prop_sau_ssl <- ssl_activity_domain / ssl_activity_sau_area
+prop_sau_ssl <- prop_sau_ssl[1, 1]
 
 #
 # Subsistence fishing gear
@@ -188,6 +197,7 @@ ssf_intensity_sau_area <- ssf_intensity_sau_area["Subsistence_Harvest_Intensity_
 ssf_activity_sau_area <- global(ssf_intensity_sau_area, fun = "sum", na.rm = TRUE)
 
 prop_sau_ssf <- ssf_activity_domain / ssf_activity_sau_area
+prop_sau_ssf <- prop_sau_ssf[1, 1]
 
 prop_sau_activity <- data.frame(
     Gear_name = strathe2e_gear_types,
@@ -197,7 +207,7 @@ prop_sau_activity <- data.frame(
         prop_sau_nets,
         prop_sau_tpl,
         prop_sau_sj,
-        prop_sau_ll,
+        prop_sau_longline,
         prop_sau_ps,
         prop_sau_dmtrwl,
         prop_sau_wcrl,
