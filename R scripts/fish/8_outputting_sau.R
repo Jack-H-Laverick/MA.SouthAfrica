@@ -1,3 +1,4 @@
+library(dplyr)
 library(arrow)
 library(sf)
 
@@ -167,3 +168,16 @@ discard_weight_target <- discards_matrix_data %>%
         names_prefix = "Discardweight_"
     )
 write.csv(discard_weight_target, "./Objects/TARGET_raw_discards_t_m2_y_{domain_name}_{start_year}-{end_year}.csv")
+
+# Target live weight landings
+landing_data <- landings %>%
+    left_join(prop_sau_activity_in_domain[, c("gear_type_se2e", "proportion_sau_activity_in_domain")], by = "gear_type_se2e") %>%
+    mutate(tonnes = tonnes * proportion_sau_activity_in_domain) %>% # Scale catch tonnes by the proportion of SAU-area effort of each gear in domain
+    group_by(year, Guild) %>%
+    summarise(annual_total_tonnes = sum(tonnes)) %>% # Calculate total annual catch for each gear type and guild
+    group_by(Guild) %>%
+    summarise(annual_average_landings_tonnes = mean(annual_total_tonnes)) %>%
+    mutate(Guild_code = names(strathe2e_guilds)[match(Guild, strathe2e_guilds)]) %>%
+    mutate(Guild_nitrogen = mMNpergWW[Guild_code]) %>%
+    mutate(annual_average_landings_mmN = annual_average_landings_tonnes * Guild_nitrogen) %>% # Convert to nitrogen weightings
+    mutate(annual_average_landings_mmN = annual_average_landings_mmN / domain_size) # Convert to landings /m^2 of domain size
