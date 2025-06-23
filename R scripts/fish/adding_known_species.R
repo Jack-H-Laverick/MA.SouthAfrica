@@ -177,10 +177,6 @@ added_species <- data.frame(
 
 known_species <- rbindlist(list(known_species, added_species))
 
-# Manually move Thyrsites atun (Snoek) from demersal to migratory guild to align with species migratory nature in Southern Benguela system and
-# align with Shannon et al. (2020) EwE classification.
-known_species[known_species$Scientific.name == "Thyrsites atun", c("Category", "Guild")] <- "Migratory"
-
 # Manually move Seriola lalandi (Yellowtail) from Planktivore to demersal guild to align with Shannon et al. (2020) EwE classification.
 known_species[known_species$Scientific.name == "Seriola lalandi", c("Guild")] <- "Demersal"
 
