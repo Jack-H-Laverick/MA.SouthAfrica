@@ -1,3 +1,6 @@
+# Format Seas Around Us data, including attaching known species/guilds to catch data and
+# attributing SAU gear types to desired model implementation gear types for the region.
+
 library(tidyverse)
 library(ggplot2)
 library(gganimate)
@@ -23,6 +26,7 @@ check_species_match <- function(string_i, strings) {
 }
 
 find_species_match <- function(string_i, strings) {
+    #' Find the closest matching string from `strings` to `string_i`.
     if (string_i %in% strings) { # Check if string is in strings
         if (sum(strings == string_i, na.rm = TRUE) > 1) { # Check if there are multiple or a single string match
             matching_strings <- strings[strings == string_i]
@@ -199,17 +203,6 @@ strath_e2e_gear_discards <- discards %>%
     )) %>%
     filter(!is.na(Guild) & year >= start_year & year <= end_year)
 arrow::write_parquet(strath_e2e_gear_discards, "./Objects/sau_discards_strath_gears.parq")
-
-# ggplot() +
-#     geom_area(
-#         data = squid_jig_prop,
-#         aes(x = year, y = proportion, fill = Guild),
-#         color = "gray"
-#     ) +
-#     theme_minimal() +
-#     labs(y = "proportion_of_landings")
-
-
 
 # Comparing Seas Around Us data and pelagic longline landings data from ITOC tuna report
 # pll_report <- extract_tables("../../Fishing Data/mike_effort_data/IOTC-2021-SC24-NR25_-_South_Africa.pdf", output = "tibble", pages = c(8))[[1]][5:15, ]

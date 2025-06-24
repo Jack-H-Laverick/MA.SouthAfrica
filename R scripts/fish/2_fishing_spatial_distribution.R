@@ -1,45 +1,12 @@
-library(ggplot2)
-library(terra)
-library(tidyterra)
-library(sf)
-library(glue)
-library(docstring)
-library(tidyterra)
-library(exactextractr)
+# Script for calculating spatial distribution of fishing across the model habitat types,
+# mainly using SANBI relative effort raster data.
 
 source("./R scripts/@_Region file.R")
 source("./R Scripts/@_model_config.R")
+source("./R scripts/fish/fishing_spatial_functions.R")
 
 # Load habitat map
 habitats <- readRDS("./Objects/Habitats.rds")
-
-extract_habitat_data <- function(raster, habitats, fun, name) {
-    #' Use exactextractr::exact_extract() function to extract raster data from each zone and rename resulting column.
-    extracted <- raster %>%
-        exact_extract(habitats, fun = fun, append_cols = c("Habitat", "Shore")) %>% # Sum fishing hours within habitat types
-        rename(!!name := fun)
-
-    return(extracted)
-}
-
-format_sanbi_raster <- function(raster_fn, habitats) {
-    #' Format a SANBI 'cumulative stress index' raster into usable values that contain just positive effort.
-    raster <- rast(raster_fn)
-    raster <- crop(raster, habitats)
-    raster <- as.numeric(raster)
-    raster <- subst(raster, -200:0, NA) # Replace 0 values with NA because there is no fishing in that area.
-
-    return(raster)
-}
-
-sanbi_proportion_effort <- function(raster, habitats, fun, name) {
-    #' Extract the effort data for each zone from a SANBI raster object and calculate the proportional effort for each zone.
-    extracted <- extract_habitat_data(raster, habitats, fun, name)
-    extracted[, name] <- ifelse(is.na(extracted[, name]), 0, extracted[, name])
-    extracted <- extracted %>% mutate("proportion_{name}" := .[, name] / sum(.[, name]))
-
-    return(extracted)
-}
 
 # Load Midwater Trawl intensity data - hours of trawling
 mw_intensity <- format_sanbi_raster(

@@ -1,3 +1,5 @@
+# Script to reproject SANBI raster fishing effort data to the project crs (4326).
+
 library(terra)
 library(sf)
 library(glue)
