@@ -1,3 +1,6 @@
+# Output fishing files using Seas Around Us data sources. This includes the scaling of catch
+# data using the proportions of effort contained within the domain region (calculated in script 6).
+
 library(dplyr)
 library(arrow)
 library(sf)

@@ -1,66 +1,15 @@
-library(tidyverse)
-library(ggplot2)
-library(arrow)
-library(sf)
-library(terra)
+# Script to extract spatial effort data from GFW for the model domain/SAU areas and create nc files.
+
 library(furrr)
 library(tictoc)
 
-create_variable_raster <- function(flag_data, x_var, target) {
-    # Then for each fishing variable
-    var_raster <- dplyr::select(flag_data, c("cell_ll_lon", "cell_ll_lat", "year", all_of(x_var))) %>% # Select it along with spatial and temporal variables
-        split(f = .$year) %>% # Split by year so we get one raster per time step
-        map(
-            function(x, target, x_var) { # For each year
+source("./R scripts/fish/fishing_spatial_functions.R")
 
-                raster <- target # Take the target grid
-                # cells <- terra::cellFromXY(target, cbind(x[, c("cell_ll_lon", "cell_ll_lat")])) # Find which cells on the grid our observations fall on
-                # raster[cells] <- x[, x_var] # Copy over the data
-                raster <- rasterize(as.matrix(x[, c("cell_ll_lon", "cell_ll_lat")]), raster, values = x[, x_var])
-
-                return(raster)
-            }, # Return an updated raster
-            target = target, x_var = x_var
-        ) %>% # Specify the target raster
-        rast() # And bind each year into a raster brick of one variable for one flag
-
-    return(var_raster)
-}
-
-create_effort_raster <- function(dataframe, vars, target, target_flag, area) {
-    tic()
-    flag_data <- filter(dataframe, flag == target_flag) # Limit to one in turn
-    vars <- names(select(flag_data, !c(cell_ll_lon, cell_ll_lat, flag, year)))
-    for (var in vars) {
-        if (sum(!is.na(flag_data[, var])) == 0) {
-            vars <- vars[vars != var]
-        }
-    }
-
-    print(glue::glue("Now processing {target_flag}")) # Keeping track
-
-    flag_rasters <- map(vars, function(x) create_variable_raster(flag_data, x, target))
-    flag_rasters <- lapply(flag_rasters, function(flag_raster) {
-        time(flag_raster) <- as.numeric(names(flag_raster))
-
-        return(flag_raster)
-    })
-
-    print(glue::glue("Now saving {target_flag}")) # Keeping track
-    future_map2(flag_rasters, paste0(target_flag, "-", vars), ~ { # Then save to netcdf
-        writeCDF(.x,
-            filename = paste0("./Data/fleet_fishing_", .y, "_", area, ".nc"), overwrite = TRUE, # Building a name from flag and variable
-            varname = .y, unit = "Hours", zname = "year",
-            atts = c("x=Longitude", "y=Latitude")
-        )
-    }, .progress = TRUE)
-    toc()
-}
-
-# Perform spatial filtering of fishing event points in Domains in Julia for extra performance ----
+# Perform spatial filtering of fishing event points in Domain and SAU area in Julia for extra performance ----
 domain <- readRDS("./Objects/Domains.rds")
 system(paste('Julia --project=@. --threads=auto "R Scripts/fish/gfw_2_1_spatial_effort.jl"'))
 
+# Process data for domain area.
 bbox <- st_bbox(domain)
 res <- 0.01
 empty_domain_raster <- rast(
@@ -106,6 +55,7 @@ flags <- unique(cumulative_fishing_hours[cumulative_fishing_hours$prop_of_total 
 
 walk(flags, function(x) create_effort_raster(fleet_domain_wider, vars, target, x, "domain"), .progress = TRUE)
 
+# Process data for SAU area.
 bbox <- st_bbox(sau_west_area)
 res <- 0.01
 empty_sau_raster <- rast(

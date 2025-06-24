@@ -1,23 +1,13 @@
-library(sf)
-library(terra)
-library(glue)
-library(exactextractr)
+# Calculate the proportion of effort of each gear type from the SAU area that is contained
+# within the domain area to scale the SAU catch data in following scripts.
+
+source("./R scripts/fish/fishing_spatial_functions.R")
 
 domain <- readRDS("./Objects/Domains.rds")
 domain <- st_union(domain)
 
 # Retrieve just the area that SAU uses for the Atlantic and Cape region, which is the intersection between the SA EEZ and the FAO zone 47
 sau_west_area <- read_sf("./Objects/sau_atlantic_cape_region.gpkg")
-
-format_sanbi_raster <- function(raster_fn, habitats) {
-    #' Format a SANBI 'cumulative stress index' raster into usable values that contain just positive effort.
-    raster <- rast(raster_fn)
-    raster <- crop(raster, habitats)
-    raster <- as.numeric(raster)
-    raster <- subst(raster, -200:0, NA) # Replace 0 values with NA because there is no fishing in that area.
-
-    return(raster)
-}
 
 # Determine the proportion of activity within the sau_west_area that is within the domain for each gear type to scale SAU catch data
 #

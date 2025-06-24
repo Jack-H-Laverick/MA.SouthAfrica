@@ -1,3 +1,5 @@
+# Compile annual effort data for each gear type.
+
 packages <- c("ggplot2", "arrow", "tidyverse", "glue", "tabulapdf", "gganimate", "randomcoloR", "terra", "arrow", "blogdown")
 sapply(packages, library, character.only = TRUE)
 options(dplyr.summarise.inform = FALSE)
