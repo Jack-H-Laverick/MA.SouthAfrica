@@ -4,6 +4,7 @@
 library(dplyr)
 library(arrow)
 library(sf)
+library(ggplot2)
 
 source("./R Scripts/@_model_config.R")
 
@@ -87,7 +88,7 @@ catch_matrix_data <- expand.grid(
     filter(Guild != "NA" & Guild != "")
 
 ggplot() +
-    geom_tile(data = catch_matrix_data, aes(x = gear_type_se2e, y = Guild, fill = log(annual_average_tonnes))) +
+    geom_tile(data = catch_matrix_data, aes(x = gear_type_se2e, y = Guild, fill = annual_average_tonnes)) +
     scale_fill_viridis_c()
 
 # Discards
@@ -128,7 +129,8 @@ catch_power_data <- catch_matrix_data %>%
     mutate(Gear_code = names(strathe2e_gear_types)[match(gear_type_se2e, strathe2e_gear_types)]) %>%
     mutate(Guild_code = names(strathe2e_guilds)[match(Guild, strathe2e_guilds)]) %>%
     left_join(annual_effort_gears[, c("Gear_code", "Activity_.s.m2.d.")], by = "Gear_code") %>% # Attach activity rates for each gear
-    mutate(power = annual_average_tonnes / Activity_.s.m2.d.) %>% # Convert catch tonnes to catching power
+    mutate(annual_average_grams_m2_d = annual_average_tonnes * 1e6 / domain_size / 360) %>% # Convert catch units to g/m^2/day (StrathE2E represents 360 days/y)
+    mutate(power = annual_average_grams_m2_d / Activity_.s.m2.d.) %>% # Convert catch tonnes to catching power
     mutate(Guild_nitrogen = mMNpergWW[Guild_code]) %>%
     mutate(power = power * Guild_nitrogen) %>% # Convert catch power from t/activity to mMNpergWW/activity for each guild
     rename(Gear_name = gear_type_se2e) %>%
@@ -140,7 +142,7 @@ catch_power_data <- catch_matrix_data %>%
         values_from = power,
         names_prefix = "Power_"
     )
-write.csv(catch_power_data, "./Objects/fishing_power_{domain_name}_{start_year}-{end_year}.csv", row.names = FALSE)
+write.csv(catch_power_data, glue("./Objects/fishing_power_{domain_name}_{start_year}-{end_year}.csv"), row.names = FALSE)
 
 discards_rates_data <- discards_matrix_data %>%
     mutate(Gear_code = names(strathe2e_gear_types)[match(gear_type_se2e, strathe2e_gear_types)]) %>%
@@ -154,7 +156,7 @@ discards_rates_data <- discards_matrix_data %>%
         values_from = annual_average_discard_rate,
         names_prefix = "Discardrate_"
     )
-write.csv(discards_rates_data, "./Objects/fishing_discards_{domain_name}_{start_year}-{end_year}.csv", row.names = FALSE)
+write.csv(discards_rates_data, glue("./Objects/fishing_discards_{domain_name}_{start_year}-{end_year}.csv", row.names = FALSE))
 
 discard_weight_target <- discards_matrix_data %>%
     left_join(catch_matrix_data, by = c("Guild", "gear_type_se2e")) %>%
@@ -170,7 +172,7 @@ discard_weight_target <- discards_matrix_data %>%
         values_from = annual_average_discard_tonnes,
         names_prefix = "Discardweight_"
     )
-write.csv(discard_weight_target, "./Objects/TARGET_raw_discards_t_m2_y_{domain_name}_{start_year}-{end_year}.csv")
+write.csv(discard_weight_target, glue("./Objects/TARGET_raw_discards_t_m2_y_{domain_name}_{start_year}-{end_year}.csv", row.names = FALSE))
 
 # Target live weight landings
 landing_data <- landings %>%
