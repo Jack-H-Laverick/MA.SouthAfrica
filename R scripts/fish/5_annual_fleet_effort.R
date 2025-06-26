@@ -102,7 +102,7 @@ prop_dll_in_domain <- sum(prop_dll_in_domain) / total_spatial_dll_intensity
 
 annual_dll_effort <- mean(c(1176, 1311, 1751, 2153, 2860, 3136, 3113, 2885, 2761, 2700)) * 14000 # Annual demersal longline effort in number of hooks (assuming each set has 14,000 hooks).
 annual_dll_effort <- annual_dll_effort / 14995 # Assuming that an average of 14,995 hooks are set per day we calculate the total number of fishing-days per year (Nyengera and Angel. 2019)
-annual_dll_effort <- annual_dll_effort * 17 * 60 * 60 # Setting begins at 2am mostly, with hauling starting at 11 and continuing for 8 to 10 hours. Total 17 hours per day wet-time assumed (Nyengera and Angel. 2019.)
+annual_dll_effort <- annual_dll_effort * 18 * 60 * 60 # Setting begins at 2am mostly, with hauling starting at 11 and continuing for 8 to 10 hours. Total 17 hours per day wet-time assumed (Nyengera and Angel. 2019.)
 annual_dll_effort <- annual_dll_effort * prop_dll_in_domain[1, 1] # Scale by proportion of effort in domain
 
 annual_longline_effort <- annual_pll_effort + annual_dll_effort
