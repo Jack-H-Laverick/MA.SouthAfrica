@@ -204,3 +204,29 @@ landing_data <- landings %>%
     mutate(Guild_nitrogen = mMNpergWW[Guild_code]) %>%
     mutate(annual_average_landings_mmN = annual_average_landings_tonnes * Guild_nitrogen) %>% # Convert to nitrogen weightings
     mutate(annual_average_landings_mmN = annual_average_landings_mmN / domain_size) # Convert to landings /m^2 of domain size
+
+# At sea processing
+processing_matrix_data <- expand.grid(
+    Guild = strathe2e_guilds,
+    gear_type_se2e = strathe2e_gear_types
+)
+processing_matrix_data$processing_rate <- 0
+
+# Processing in the demersal trawl gear type is 90% Walmsley et al. (2007)
+processing_matrix_data[processing_matrix_data$Guild == "Demersal" & processing_matrix_data$gear_type_se2e == "demersal trawl", ]$processing_rate <- 0.9
+
+# Processing in tuna fisheries occurs at sea (dressing and gutting). We assume 100% processing rate. West et al. 2024. Parker et al. 2021.
+processing_matrix_data[processing_matrix_data$Guild == "Migratory" & processing_matrix_data$gear_type_se2e %in% c("longline", "pole and line"), ]$processing_rate <- 1
+
+processing_matrix_data <- processing_matrix_data %>%
+    mutate(Gear_code = names(strathe2e_gear_types)[match(gear_type_se2e, strathe2e_gear_types)]) %>%
+    mutate(Guild_code = names(strathe2e_guilds)[match(Guild, strathe2e_guilds)]) %>%
+    rename(Gear_name = gear_type_se2e) %>%
+    pivot_wider(
+        id_cols = c(Gear_name, Gear_code),
+        names_from = Guild_code,
+        values_from = processing_rate,
+        names_prefix = "Propgutted_"
+    )
+
+write.csv(processing_matrix_data, glue("./Objects/fishing_processing_{domain_name}_{start_year}-{end_year}.csv"), row.names = FALSE)
