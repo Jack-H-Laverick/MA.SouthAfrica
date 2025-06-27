@@ -71,12 +71,27 @@ additional_bird_demersal_trawl <- c(
 )
 additional_bird_demersal_trawl <- sum(additional_bird_demersal_trawl) / 1000
 
+# Seal bycatch data taken from Wickens and Sims (1994) paper. Discard rate assumed to be 100% of mortalities as permits do not require landing seals.
+additional_seal_demersal_trawl <- c( # Bycatch of cape fur seals in the demersal trawl fishery
+    332 * 76, # Offshore demersal trawl female seals (76kg)
+    166 * 279, # Offshore demersal trawl male seals (279kg)
+    992 * 279 # Inshore demersal trawl male seals (279kg) (possibly only male seals killed during inshore trawling)
+)
+additional_seal_demersal_trawl <- sum(additional_seal_demersal_trawl) / 1000
+
+# Reed, Kerath and Attwood (2017) state 0.04% of annual average catch weight for midwater trawl fishery is cape fur seals
+annual_catch_mw_trawl <- sum(catch[catch$gear_type_se2e == "midwater trawl", ]$annual_average_tonnes)
+additional_seal_midwater_trawl <- annual_catch_mw_trawl * (0.04 / 100)
+
+# Best et al. (2001). State that there were 3 reported fatal entanglements of Southern Right Whales in longline gear from 1963-1998.
+additional_cetacean_longline <- 3 * mean(c(36, 73)) / (1998 - 1963) # Body mass between 36 and 73 tonnes.
+
 catch <- rbind(
     catch,
     data.frame(
-        gear_type_se2e = c("longline", "demersal trawl"),
-        Guild = c("Birds", "Birds"),
-        annual_average_tonnes = c(additional_bird_longline, additional_bird_demersal_trawl)
+        gear_type_se2e = c("longline", "demersal trawl", "demersal trawl", "midwater trawl"),
+        Guild = c("Birds", "Birds", "Seals", "Seals"),
+        annual_average_tonnes = c(additional_bird_longline, additional_bird_demersal_trawl, additional_seal_demersal_trawl, additional_seal_midwater_trawl)
     )
 )
 
@@ -119,10 +134,13 @@ discards_matrix_data[discards_matrix_data$Guild == "Birds" & discards_matrix_dat
 # Assumed that birds are most often killed during waste dumping in demersal trawl fishery and are not kept to bring to port, thus discard rate = 1.
 discards_matrix_data[discards_matrix_data$Guild == "Birds" & discards_matrix_data$gear_type_se2e == "demersal trawl", ]$annual_average_discard_rate <- 1
 
+# Assumed seal and cetacean discard rates are 1
+discards_matrix_data[discards_matrix_data$Guild == "Pinnipeds", ]$annual_average_discard_rate <- 1
+discards_matrix_data[discards_matrix_data$Guild == "Cetacean", ]$annual_average_discard_rate <- 1
+
 ggplot() +
     geom_tile(data = discards_matrix_data, aes(x = gear_type_se2e, y = Guild, fill = annual_average_discard_rate)) +
     scale_fill_viridis_c()
-
 
 # Output final matrix files
 catch_power_data <- catch_matrix_data %>%
