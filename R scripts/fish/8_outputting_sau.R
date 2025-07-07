@@ -5,6 +5,7 @@ library(dplyr)
 library(arrow)
 library(sf)
 library(ggplot2)
+library(glue)
 
 source("./R Scripts/@_model_config.R")
 
@@ -193,17 +194,15 @@ discard_weight_target <- discards_matrix_data %>%
 write.csv(discard_weight_target, glue("./Objects/TARGET_raw_discards_t_m2_y_{domain_name}_{start_year}-{end_year}.csv", row.names = FALSE))
 
 # Target live weight landings
-landing_data <- landings %>%
-    left_join(prop_sau_activity_in_domain[, c("gear_type_se2e", "proportion_sau_activity_in_domain")], by = "gear_type_se2e") %>%
-    mutate(tonnes = tonnes * proportion_sau_activity_in_domain) %>% # Scale catch tonnes by the proportion of SAU-area effort of each gear in domain
-    group_by(year, Guild) %>%
-    summarise(annual_total_tonnes = sum(tonnes)) %>% # Calculate total annual catch for each gear type and guild
-    group_by(Guild) %>%
-    summarise(annual_average_landings_tonnes = mean(annual_total_tonnes)) %>%
+landing_data <- discards_matrix_data %>%
+    left_join(catch_matrix_data, by = c("Guild", "gear_type_se2e")) %>%
+    mutate(Gear_code = names(strathe2e_gear_types)[match(gear_type_se2e, strathe2e_gear_types)]) %>%
     mutate(Guild_code = names(strathe2e_guilds)[match(Guild, strathe2e_guilds)]) %>%
-    mutate(Guild_nitrogen = mMNpergWW[Guild_code]) %>%
-    mutate(annual_average_landings_mmN = annual_average_landings_tonnes * Guild_nitrogen) %>% # Convert to nitrogen weightings
-    mutate(annual_average_landings_mmN = annual_average_landings_mmN / domain_size) # Convert to landings /m^2 of domain size
+    mutate(annual_average_discard_rate = ifelse(is.na(annual_average_discard_rate), 0, annual_average_discard_rate)) %>%
+    mutate(annual_average_landings_tonnes = (1 - annual_average_discard_rate) * annual_average_tonnes) %>% # Convert to landings /m^2 of domain size
+    group_by(Guild, Guild_code) %>%
+    summarise(annual_average_landings_tonnes = sum(annual_average_landings_tonnes, na.rm = TRUE)) %>%
+    mutate(annual_average_landings_tonnes = annual_average_landings_tonnes / (domain_size / 1000000))
 
 # At sea processing
 processing_matrix_data <- expand.grid(
