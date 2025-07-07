@@ -85,6 +85,8 @@ all(unique(event_timing$EwE_group_name) %in% se2e_ewe_match$EwE_group_name)
 
 average_event_timing <- event_timing %>%
     left_join(., se2e_ewe_match, by = "EwE_group_name") %>%
+    group_by(EwE_group_name, event, guild, prop_contribution_to_se2e_group_b) %>%
+    summarise(value = mean(value)) %>%
     group_by(event, guild) %>%
     summarise(value = weighted.mean(value, prop_contribution_to_se2e_group_b)) %>%
     mutate(
