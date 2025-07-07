@@ -180,4 +180,7 @@ known_species <- rbindlist(list(known_species, added_species))
 # Manually move Seriola lalandi (Yellowtail) from Planktivore to demersal guild to align with Shannon et al. (2020) EwE classification.
 known_species[known_species$Scientific.name == "Seriola lalandi", c("Guild")] <- "Demersal"
 
+# Manually move Scombridae (Mackerels and Tunas) to Demersal as it is not specified whether the species is mackerels or tunas and mackerels are not migratory.
+known_species[known_species$Scientific.name == "Scombridae", c("Guild")] <- "Demersal"
+
 write.csv(known_species, "./Objects/updated_known_fish_guilds.csv")
