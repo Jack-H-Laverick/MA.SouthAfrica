@@ -10,7 +10,7 @@ library(glue)
 source("./R Scripts/@_model_config.R")
 
 domain_size <- readRDS("./Objects/Domains.rds") %>% # We need landings as tonnes per m^2
-    st_transform(crs = 9822) %>%
+    st_transform(crs = 4326) %>%
     sf::st_union() %>%
     sf::st_area() %>%
     as.numeric()
@@ -150,7 +150,7 @@ catch_power_data <- catch_matrix_data %>%
     left_join(annual_effort_gears[, c("Gear_code", "Activity_.s.m2.d.")], by = "Gear_code") %>% # Attach activity rates for each gear
     mutate(annual_average_grams_m2_d = annual_average_tonnes * 1e6 / domain_size / 360) %>% # Convert catch units to g/m^2/day (StrathE2E represents 360 days/y)
     mutate(power = annual_average_grams_m2_d / Activity_.s.m2.d.) %>% # Convert catch tonnes to catching power
-    mutate(Guild_nitrogen = mMNpergWW[Guild_code]) %>%
+    mutate(Guild_nitrogen = mMNpergWW[Guild]) %>%
     mutate(power = power * Guild_nitrogen) %>% # Convert catch power from t/activity to mMNpergWW/activity for each guild
     rename(Gear_name = gear_type_se2e) %>%
     select(Gear_name, Gear_code, Guild_code, power) %>%
@@ -202,7 +202,10 @@ landing_data <- discards_matrix_data %>%
     mutate(annual_average_landings_tonnes = (1 - annual_average_discard_rate) * annual_average_tonnes) %>% # Convert to landings /m^2 of domain size
     group_by(Guild, Guild_code) %>%
     summarise(annual_average_landings_tonnes = sum(annual_average_landings_tonnes, na.rm = TRUE)) %>%
-    mutate(annual_average_landings_tonnes = annual_average_landings_tonnes / (domain_size / 1000000))
+    mutate(annual_average_landings_grams = annual_average_landings_tonnes * 1000000) %>%
+    mutate(annual_average_landings_grams = annual_average_landings_grams / domain_size) %>%
+    mutate(Guild_nitrogen = mMNpergWW[Guild]) %>%
+    mutate(annual_average_landings_mMN = annual_average_landings_grams * Guild_nitrogen)
 
 # At sea processing
 processing_matrix_data <- expand.grid(
