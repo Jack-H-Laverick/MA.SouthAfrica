@@ -6,10 +6,12 @@ library(tidyterra)
 library(sf)
 library(tidyverse)
 library(glue)
+library(docstring)
 
 source("./R scripts/@_Region file.R")
 
 domain <- readRDS("./Objects/Domains.rds") %>%
+    st_transform(crs = 4326) %>%
     mutate(area_proportion = area / sum(area))
 
 winter_months <- c("Nov", "Dec", "Jan", "Feb") # Winter months are Nov-Feb despite South Africa being in southern hemisphere to align with existing StrathE2E setup.
@@ -84,12 +86,13 @@ extract_domain_woa <- function(domain, directory, depth_ranges, month, variable,
             values(.) %>%
             sd(., na.rm = TRUE)
 
-        domain_vol <- sum(domain_l$area) * (depth_range[2] - depth_range[1])
-        volume_mean <- target_layer_mean / 1000 / domain_vol # Convert from micromolar to millimolar then divide by target domain volume
-        volume_stdev <- target_layer_std / 1000 / domain_vol
+        # domain_vol <- sum(domain_l$area) * (depth_range[2] - depth_range[1])
+        volume_mean <- target_layer_mean # / 1000 / domain_vol # Convert from micromolar to millimolar then divide by target domain volume
+        volume_stdev <- target_layer_std # / 1000 / domain_vol
 
         # For shallow layer the mean is calculated for the offshore and inshore shallow layers separately as they have different depths
     } else if (depth == "shallow") {
+        domain_vols <- c("inshore" = NA, "offshore" = NA)
         volume_means <- c("inshore" = NA, "offshore" = NA)
         volume_stds <- c("inshore" = NA, "offshore" = NA)
 
@@ -118,14 +121,14 @@ extract_domain_woa <- function(domain, directory, depth_ranges, month, variable,
                 values(.) %>%
                 sd(., na.rm = TRUE)
 
-            domain_vol <- sum(domain_l$area) * (depth_range[2] - depth_range[1])
-            volume_means[i] <- target_layer_mean / 1000 / domain_vol # Convert from micromolar to millimolar then divide by target domain volume
-            volume_stds[i] <- target_layer_std / 1000 / domain_vol
+            domain_vols[i] <- sum(domain_l$area) * (depth_range[2] - depth_range[1])
+            volume_means[i] <- target_layer_mean # / domain_vol  / 1000 Convert from micromolar to millimolar then divide by target domain volume
+            volume_stds[i] <- target_layer_std # / domain_vol / 1000
         }
 
-        # Combine inshore and offshore statistics using area-weighting
-        volume_mean <- weighted.mean(volume_means, domain$area_proportion)
-        volume_stdev <- weighted.mean(volume_stds, domain$area_proportion)
+        # # Combine inshore and offshore statistics using area-weighting
+        volume_mean <- weighted.mean(volume_means, domain_vols)
+        volume_stdev <- weighted.mean(volume_stds, domain_vols)
     } else {
         stop(glue("Depth {depth} not found, only shallow or deep accepted."))
     }
@@ -149,3 +152,5 @@ results[, c("mean_conc", "sd_conc")] <- pmap(results[, c("month_num", "variable"
 season_mean <- results %>%
     group_by(season, depth) %>%
     summarise(mean_conc = mean(mean_conc), std_conc = mean(sd_conc))
+
+write.csv(season_mean, "./Objects/woa23_nitrate_concentrations.csv", row.names = FALSE)
