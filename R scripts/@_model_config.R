@@ -31,9 +31,36 @@ strathe2e_guilds <- c(
 )
 guild_codes <- names(strathe2e_guilds)
 
-# Table of nitrogen per unit wet weight - from Table 18 of SE2E North Sea implementation
-mMNpergWW <- c(
-    PF = 2.038, DF = 1.340, MF = 2.314, FDB = 0.503,
-    CSB = 1.006, CZ = 1.258, BD = 2.518, SL = 2.518,
-    CT = 2.518, KP = 2.070
+mMNpergWW <- c(1.257861635, 1.257861635, 1.257861635, 1.257861635, 1.257861635, 2.07, 1.257861635, 1.257861635, 1.257861635, 1.257861635, 1.257861635, 0.503144654, 1.257861635, 1.006289308, 1.257861635, 2.037735849, 2.314465409, 1.257861635, 1.295597484, 2.51572327, 2.51572327, 2.51572327, 2.51572327)
+names(mMNpergWW) <- c(
+    "Suspended_detritus",
+    "Ice_detritus",
+    "Sediment_detritus",
+    "Discards",
+    "Corpses",
+    "Macrophytes",
+    "Ice_algae",
+    "Phytoplankton",
+    "Zooplankton omnivore",
+    "Zooplanton carnivore",
+    "Benthos filter/deposit feeder larvae",
+    "Benthos filter/deposit feeder",
+    "Benthos carnivore/scavenge feeder",
+    "Benthos carnivore/scavenge feeder",
+    "Planktivore larvae",
+    "Planktivore",
+    "Migratory",
+    "Demersal larvae",
+    "Demersal",
+    "Birds",
+    "Pinnipeds",
+    "Cetacean",
+    "Bears"
 )
+
+# # Table of nitrogen per unit wet weight - from Table 18 of SE2E North Sea implementation
+# mMNpergWW <- c(
+#     PF = 2.038, DF = 1.340, MF = 2.314, FDB = 0.503,
+#     CSB = 1.006, CZ = 1.258, BD = 2.518, SL = 2.518,
+#     CT = 2.518, KP = 2.070
+# )
