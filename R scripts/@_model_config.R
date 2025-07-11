@@ -42,7 +42,7 @@ names(mMNpergWW) <- c(
     "Ice_algae",
     "Phytoplankton",
     "Zooplankton omnivore",
-    "Zooplanton carnivore",
+    "Zooplankton carnivore",
     "Benthos filter/deposit feeder larvae",
     "Benthos filter/deposit feeder",
     "Benthos carnivore/scavenge feeder",
