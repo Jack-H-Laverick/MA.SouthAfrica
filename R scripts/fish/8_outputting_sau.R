@@ -35,7 +35,7 @@ catch <- rbind(landings, discards) %>%
     group_by(year, gear_type_se2e, Guild) %>%
     summarise(annual_total_tonnes = sum(tonnes)) %>% # Calculate total annual catch for each gear type and guild
     group_by(gear_type_se2e, Guild) %>%
-    summarise(annual_average_tonnes = mean(annual_total_tonnes)) # Calculate annual average for each gear and guild
+    summarise(annual_average_tonnes = mean(annual_total_tonnes), annual_std_tonnes = sd(annual_total_tonnes)) # Calculate annual average for each gear and guild
 
 # Add longline (pelagic and longline) bird landings data (catch for birds from longlines are added to landings because birds are taken to port in this fishery)
 # Data values taken from Rollinson et al (2017). Patterns and trends in seabird bycatch in the pelagic longline fishery off South Africa (over 8 years).
@@ -92,7 +92,8 @@ catch <- rbind(
     data.frame(
         gear_type_se2e = c("longline", "demersal trawl", "demersal trawl", "midwater trawl"),
         Guild = c("Birds", "Birds", "Seals", "Seals"),
-        annual_average_tonnes = c(additional_bird_longline, additional_bird_demersal_trawl, additional_seal_demersal_trawl, additional_seal_midwater_trawl)
+        annual_average_tonnes = c(additional_bird_longline, additional_bird_demersal_trawl, additional_seal_demersal_trawl, additional_seal_midwater_trawl),
+        annual_std_tonnes = rep(NA, 4)
     )
 )
 
@@ -100,7 +101,7 @@ catch_matrix_data <- expand.grid(
     Guild = strathe2e_guilds,
     gear_type_se2e = strathe2e_gear_types
 ) %>%
-    left_join(., catch[, c("gear_type_se2e", "Guild", "annual_average_tonnes")], by = c("gear_type_se2e", "Guild")) %>%
+    left_join(., catch[, c("gear_type_se2e", "Guild", "annual_average_tonnes", "annual_std_tonnes")], by = c("gear_type_se2e", "Guild")) %>%
     filter(Guild != "NA" & Guild != "")
 
 ggplot() +
@@ -177,35 +178,79 @@ discards_rates_data <- discards_matrix_data %>%
     )
 write.csv(discards_rates_data, glue("./Objects/fishing_discards_{domain_name}_{start_year}-{end_year}.csv", row.names = FALSE))
 
+# Calculate bird, seal and cetacean discards in mMN/m^2/y
 discard_weight_target <- discards_matrix_data %>%
     left_join(catch_matrix_data, by = c("Guild", "gear_type_se2e")) %>%
+    filter(Guild %in% c("Birds", "Pinnipeds", "Cetacean")) %>%
     mutate(Gear_code = names(strathe2e_gear_types)[match(gear_type_se2e, strathe2e_gear_types)]) %>%
     mutate(Guild_code = names(strathe2e_guilds)[match(Guild, strathe2e_guilds)]) %>%
-    mutate(annual_average_discard_tonnes = annual_average_discard_rate * annual_average_tonnes) %>%
-    rename(Gear_name = gear_type_se2e) %>%
-    select(Gear_name, Gear_code, Guild_code, annual_average_discard_tonnes) %>%
-    mutate(annual_average_discard_rate = ifelse(is.na(annual_average_discard_tonnes), 0, annual_average_discard_tonnes)) %>%
-    pivot_wider(
-        id_cols = c(Gear_name, Gear_code),
-        names_from = Guild_code,
-        values_from = annual_average_discard_tonnes,
-        names_prefix = "Discardweight_"
-    )
-write.csv(discard_weight_target, glue("./Objects/TARGET_raw_discards_t_m2_y_{domain_name}_{start_year}-{end_year}.csv", row.names = FALSE))
+    mutate(
+        annual_average_discard_tonnes = annual_average_discard_rate * annual_average_tonnes,
+        annual_std_discard_tonnes = annual_average_discard_rate * annual_std_tonnes
+    ) %>%
+    group_by(Guild, Guild_code) %>%
+    summarise(
+        annual_average_discard_tonnes = sum(annual_average_discard_tonnes, na.rm = TRUE),
+        annual_std_discard_tonnes = sum(annual_std_discard_tonnes, na.rm = TRUE)
+    ) %>%
+    mutate(
+        annual_average_discard_grams = annual_average_discard_tonnes * 1000000,
+        annual_std_discard_grams = annual_std_discard_tonnes * 1000000
+    ) %>%
+    mutate(
+        annual_average_discard_grams = annual_average_discard_grams / domain_size,
+        annual_std_discard_grams = annual_std_discard_grams / domain_size
+    ) %>%
+    mutate(Guild_nitrogen = mMNpergWW[Guild]) %>%
+    mutate(
+        annual_average_discard_mMN = annual_average_discard_grams * Guild_nitrogen,
+        annual_std_discard_mMN = annual_std_discard_grams * Guild_nitrogen
+    ) %>%
+    select(Guild, Guild_code, annual_average_discard_mMN, annual_std_discard_mMN)
 
-# Target live weight landings
+write.csv(discard_weight_target, "./Objects/guild_discards_target_data.csv")
+
+# Calculate guild landings in mMN/m^2/y
 landing_data <- discards_matrix_data %>%
     left_join(catch_matrix_data, by = c("Guild", "gear_type_se2e")) %>%
+    filter(Guild %in% c(
+        "Planktivore",
+        "Demersal",
+        "Migratory",
+        "Benthos filter/deposit feeder",
+        "Benthos carnivore/scavenge feeder",
+        "Zooplankton carnivore",
+        "Macrophyte"
+    )) %>%
     mutate(Gear_code = names(strathe2e_gear_types)[match(gear_type_se2e, strathe2e_gear_types)]) %>%
     mutate(Guild_code = names(strathe2e_guilds)[match(Guild, strathe2e_guilds)]) %>%
     mutate(annual_average_discard_rate = ifelse(is.na(annual_average_discard_rate), 0, annual_average_discard_rate)) %>%
-    mutate(annual_average_landings_tonnes = (1 - annual_average_discard_rate) * annual_average_tonnes) %>% # Convert to landings /m^2 of domain size
+    mutate(
+        annual_average_landings_tonnes = (1 - annual_average_discard_rate) * annual_average_tonnes,
+        annual_std_landings_tonnes = (1 - annual_average_discard_rate) * annual_std_tonnes
+    ) %>% # Convert to landings /m^2 of domain size
     group_by(Guild, Guild_code) %>%
-    summarise(annual_average_landings_tonnes = sum(annual_average_landings_tonnes, na.rm = TRUE)) %>%
-    mutate(annual_average_landings_grams = annual_average_landings_tonnes * 1000000) %>%
-    mutate(annual_average_landings_grams = annual_average_landings_grams / domain_size) %>%
+    summarise(
+        annual_average_landings_tonnes = sum(annual_average_landings_tonnes, na.rm = TRUE),
+        annual_std_landings_tonnes = sum(annual_std_landings_tonnes, na.rm = TRUE)
+    ) %>%
+    mutate(
+        annual_average_landings_grams = annual_average_landings_tonnes * 1000000,
+        annual_std_landings_grams = annual_std_landings_tonnes * 1000000
+    ) %>%
+    mutate(
+        annual_average_landings_grams = annual_average_landings_grams / domain_size,
+        annual_std_landings_grams = annual_std_landings_grams / domain_size
+    ) %>%
     mutate(Guild_nitrogen = mMNpergWW[Guild]) %>%
-    mutate(annual_average_landings_mMN = annual_average_landings_grams * Guild_nitrogen)
+    mutate(
+        annual_average_landings_mMN = annual_average_landings_grams * Guild_nitrogen,
+        annual_std_landings_mMN = annual_std_landings_grams * Guild_nitrogen
+    ) %>%
+    select(Guild, Guild_code, annual_average_landings_mMN, annual_std_landings_mMN)
+write.csv(landing_data, file = "./Objects/guild_landings_target_data.csv")
+
+
 
 # At sea processing
 processing_matrix_data <- expand.grid(
