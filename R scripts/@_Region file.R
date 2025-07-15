@@ -1,6 +1,6 @@
 
 ## Set repeated commands specific to the project region
-implementation <- "South_Africa"
+implementation <- "South_Africa_MA"
 
 library(sf)
 
@@ -37,12 +37,12 @@ shape <-  matrix %>%
   
 }                      # Convert a matrix of lat-lons to an sf polygon
 
-Region_mask <- matrix(c(28, -38.5,
+Region_mask <- matrix(c(22.5, -38.5,
                         15, -38.5,
-                        13, -28.6,
+                        13, -28.6,    # was 28 before, perhaps just the EEZ to the East?
                         17, -26.9,
-                        28, -32,
-                        28, -38.5),
+                        22.5, -32,
+                        22.5, -38.5),
                        ncol = 2, byrow = T) %>% 
   shape(label = implementation)
 
@@ -52,7 +52,7 @@ ggplot(Region_mask)+geom_sf()
 
 ## Polygons to mark which transects are along the open ocean-inshore boundary
 
-Inshore_Ocean1 <- matrix(c(27.98, 27.98, 28.02, 28.02, 27.98,    # Longitudes
+Inshore_Ocean1 <- matrix(c(22.48, 22.48, 22.52, 22.52, 22.48,    # Longitudes
                            -38.5, -32, -32, -38.5, -38.5), ncol = 2, byrow = F) %>% 
   shape()
 
