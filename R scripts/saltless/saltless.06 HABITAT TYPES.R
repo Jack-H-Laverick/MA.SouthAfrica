@@ -1,53 +1,66 @@
 
-# Convert Marine Ecosystem Map into StrathE2E habitats
+## There are artifacts in the digitisation of the habitat maps which break SF, I have
+## cleaned up the large offshore sand polygon below, to stop the errors.
 
 #### Set up ####
 
 rm(list=ls())
 
-Packages <- c("MiMeMo.tools", "stars")                           # List packages
+Packages <- c("MiMeMo.tools", "stars", "raster")                 # List packages
 lapply(Packages, library, character.only = TRUE)                 # Load packages
 source("./R scripts/@_Region file.R")
 
-domains <- readRDS("./Objects/Domains.rds") %>%                  # Load SF polygons of model domain
+domains <- readRDS("./Objects/Domains.rds") %>%                  # Load SF polygons of the MiMeMo model domains
   st_transform(crs = 4326)                                       # Transform to Lat/Lon to match other objects
 
-MEM <- st_read("./Data/MEM18/") # Import South African map
+polygons <- readRDS("./Data/Habitats.rds") %>%                   # Ben's Map
+  st_make_valid()
 
-#### Limit the map to the model domain ####
+#### Cleaning ####
 
-polygons <- st_intersection(st_make_valid(st_transform(MEM, crs = crs)), # Split sediment polygons along model zones
-                            st_transform(domains, crs = crs)) %>% 
-  select(-c(Elevation, area)) %>%                                # Drop excess data
-  st_transform(crs = 4326) %>%                                   # Switch back to mercator
-  mutate(Habitats = case_when(str_detect(Substratum, "Mud") ~ "Mud",
-                              str_detect(Substratum, "Sand") ~ "Sand",
-                              str_detect(Substratum, "Rock") ~ "Rock",
-                              T ~ "unclassified"))
+ggplot(polygons) +                                               # Lots of whispy bits
+  geom_sf(aes(fill = Habitat))
 
-ggplot(polygons) +
-  geom_sf(aes(fill = Substratum)) +
-  geom_sf(data = domains, fill = NA, colour = "red")
+sf_use_s2(FALSE)
+
+sand <- filter(polygons, Habitat == "sand", Shore == "Offshore") # Work on just the worst polygon 
+plot(sand)
+
+bbp = st_as_sf(st_as_sfc(st_bbox(sand)), crs=4326)               # Get an sf object of the bounding box
+
+test <- st_difference(bbp, sand) %>%                             # cut the negative of the shape
+  st_cast("POLYGON") %>%                                         # Access each sub-shape separately
+  mutate(area = as.numeric(st_area(st_make_valid(.)))) %>%       # Calculate their size
+  filter(area > 100000000) %>%                                   # Now remove all the tiny holes
+  st_union()                                                     # And join all the shapes together again
   
-polygons <- group_by(polygons, Shore, Habitats) %>% 
-  summarise(Shore = Shore[[1]],
-            Habitats = Habitats[[1]]) %>%  
-  ungroup()
-  
-ggplot(polygons) +
-  geom_sf(aes(fill = Habitats)) 
+plot(test)                                                       # We now only have the "real" holes in the habitat map
+plot(sand)
 
-#saveRDS(polygons, "./Objects/Habitats.rds")
+final <- st_difference(bbp, test) %>%                            # Cut the negative out of the bounding box to get the shape back
+  rename(geometry = "x") %>% 
+  st_as_sf(sf_column_name = "geometry") %>% 
+  mutate(Habitat = "sand", Shore = "Offshore")                   # Reinstate names
+
+plot(final)
+
+new_polygons <- filter(polygons, paste(Habitat, Shore) != "sand Offshore") %>% # Remove the old polygon
+  bind_rows(final)                                               # and add in the cleaned one
+
+ggplot(new_polygons) +
+  geom_sf(aes(fill = Habitat), alpha = 0.5)                      # No obvious overlaps
+
+saveRDS(new_polygons, "./Objects/Habitats.rds")
 
 #### Calculate proportion of model zones in each habitat ####
 
-proportions <- polygons %>% 
+proportions <- new_polygons %>% 
   mutate(Cover = as.numeric(st_area(.))) %>%                     # Measure the area of each habitat type
   st_drop_geometry() %>%                                         # Drop SF formatting
   mutate(Cover = Cover/sum(Cover)) %>%                           # Calculate the proportion of the model zone in each sediment polygon 
-  rename(Bottom = Habitats)
+  rename(Bottom = Habitat)
 
-#saveRDS(proportions, "./Objects/Sediment area proportions.rds")
+saveRDS(proportions, "./Objects/Sediment area proportions.rds")
 
 ggplot(proportions) +
   geom_col(aes(x = Shore, y = Cover*100, fill = Bottom), position = "Dodge") +
@@ -58,4 +71,3 @@ ggplot(proportions) +
   labs(y = "Cover (%)", x = NULL, caption = "Percentage of model domain in each habitat class")
 
 ggsave("./Figures/saltless/Habitat types.png", width = 16, height = 8, units = "cm")
-
