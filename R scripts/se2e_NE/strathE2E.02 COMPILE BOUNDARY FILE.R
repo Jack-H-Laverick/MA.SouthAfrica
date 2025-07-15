@@ -8,7 +8,7 @@ rm(list=ls())                                                               # Wi
 library(MiMeMo.tools)
 source("./R scripts/@_Region file.R")
 
-Boundary_template <- read.csv(stringr::str_glue("./StrathE2E/{implementation}/2010-2019/Driving/chemistry_CELTIC_SEA_2003-2013.csv"))  # Read in example boundary drivers
+Boundary_template <- read.csv(stringr::str_glue("./StrathE2E/{implementation}/2010-2019/Driving/chemistry_CELTIC_SEA_MA_2010-2019-CNRM-ssp126.csv"))  # Read in example boundary drivers
 
 
 ##!! data fix
@@ -86,7 +86,7 @@ My_atmosphere <- readRDS("./Objects/Atmospheric N deposition.rds") %>%
 
 #### Create new file ####
 
-Boundary_new <- rename(Boundary_template, SO_ammonia = SO_ammona, D_nitrate = D_intrate) %>% # Fix Mike's typos
+Boundary_new <- Boundary_template %>% 
                 mutate(SO_nitrate = My_boundary_data$SO_NO3,
                        SO_ammonia = My_boundary_data$SO_NH4,
                        SO_phyt = My_boundary_data$SO_phyt,
