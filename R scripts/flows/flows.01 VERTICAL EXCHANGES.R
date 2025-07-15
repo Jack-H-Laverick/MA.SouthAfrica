@@ -6,7 +6,7 @@
 
 rm(list=ls())                                                                   # Wipe the brain
 
-Packages <- c("tidyverse", "data.table", "furrr")                               # List packages
+Packages <- c("tidyverse", "data.table", "furrr" ,"sf")                         # List packages
 lapply(Packages, library, character.only = TRUE)                                # Load packages
 
 plan(multisession)
@@ -35,9 +35,9 @@ ggplot(total_mixing) +
 
 #### Mean vertical diffusivity ignoring deep convection ####
 
-normal_mixing <- select(data, Vertical_diffusivity, Year, Month) %>%            # Discard excess variables
-  filter(Vertical_diffusivity < deep_convection_is) %>%                         # Remove deep convection
-  group_by(Year, Month) %>%                                                     # Create a monthly time series
+normal_mixing <- select(data, Vertical_diffusivity, Year, Month, Forcing, SSP) %>% # Discard excess variables
+  filter(Vertical_diffusivity < deep_convection_is) %>%                            # Remove deep convection
+  group_by(Year, Month, Forcing, SSP) %>%                                          # Create a monthly time series
   summarise(Vertical_diffusivity = mean(Vertical_diffusivity, na.rm = T)) %>% 
   ungroup()
 
@@ -47,7 +47,7 @@ saveRDS(normal_mixing, "./Objects/vertical diffusivity.rds")
 
 sf_use_s2(F)
 
-samples <- filter(data, Year == 1980, Month == 1 ) %>% 
+samples <- filter(data, Year == 2015, Month == 1 ) %>% 
   st_as_sf(coords = c("longitude", "latitude"), remove = F)
 
 area <- st_union(samples) %>%                                               # Combine              
@@ -58,22 +58,33 @@ area <- st_union(samples) %>%                                               # Co
   arrange(x, y) %>%                                                         # Order the polygons to match the points
   st_set_crs(4326) %>% 
   st_transform(crs = st_crs(offshore)) %>% 
+  st_make_valid() %>% 
   st_intersection(offshore) %>% 
   mutate(area_m2 = as.numeric(st_area(.))) %>% 
   select(x, y, area_m2)
+
+rm(samples)
 
 ggplot(area) +                                                              # Check the polygons match correctly with points
   geom_sf(aes(fill = area_m2), size = 0.05, colour = "white") +
   theme_minimal() +
   NULL
 
-exchanges <- select(data, Vertical_velocity, Year, Month, x, y) %>%        # Discard excess variables
+area <- st_drop_geometry(area)
+
+gc()
+gc()
+
+exchanges <- select(data, Vertical_velocity, Year, Month, x, y, Forcing, SSP) %>%   # Discard excess variables
   mutate(Direction = ifelse(Vertical_velocity > 0, "Upwelling", "Downwelling")) %>% # Identify upwelling and downwelling
-  left_join(st_drop_geometry(area)) %>% 
+  left_join(area) %>% 
   mutate(Vertical_velocity = abs(Vertical_velocity)*area_m2) %>%                    # Scale up flow rate to volume of water
-  group_by(Year, Month, Direction) %>%                                              # Create a monthly time series
+  group_by(Year, Month, Direction, Forcing, SSP, x, y) %>%                          # Average across days in a month per pixel
+  summarise(Vertical_velocity = mean(Vertical_velocity, na.rm = T)) %>% 
+  ungroup() %>% 
+  group_by(Year, Month, Direction, Forcing, SSP) %>%                                # Create a monthly time series
   summarise(Vertical_velocity = sum(Vertical_velocity, na.rm = T)) %>% 
   ungroup() %>% 
-  pivot_wider(c(Year, Month), names_from = Direction, values_from = Vertical_velocity)
+  pivot_wider(c(Year, Month, Forcing, SSP), names_from = Direction, values_from = Vertical_velocity)
 
 saveRDS(exchanges, "./Objects/SO_DO exchanges.rds")
