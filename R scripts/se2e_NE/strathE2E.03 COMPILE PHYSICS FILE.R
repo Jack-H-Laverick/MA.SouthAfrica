@@ -8,9 +8,7 @@ rm(list=ls())                                                               # Wi
 library(MiMeMo.tools)
 source("./R scripts/@_Region file.R")
 
-Physics_template <- read.csv(stringr::str_glue("./StrathE2E/{implementation}/2010-2019/Driving/physics_CELTIC_SEA_2003-2013.csv"))  # Read in example Physical drivers
-
-Depths <- read.csv(stringr::str_glue("./StrathE2E/{implementation}/2010-2019/Param/physical_parameters_CELTIC_SEA.csv"), nrows = 3) # Import Mike's original depths for scaling.
+Physics_template <- read.csv(stringr::str_glue("./StrathE2E/{implementation}/2010-2019/Driving/physics_CELTIC_SEA_MA_2010-2019-CNRM-ssp126.csv"))  # Read in example Physical drivers
 
 My_scale <- readRDS("./Objects/Domains.rds") %>%                            # Calculate the volume of the three zones
   sf::st_drop_geometry() %>% 
@@ -19,10 +17,9 @@ My_scale <- readRDS("./Objects/Domains.rds") %>%                            # Ca
                        Shore == "Offshore" ~ T)) %>% 
   gather(key = "slab_layer", value = "Exists", S, D) %>% 
   filter(Exists == T) %>%
-  # mutate(Elevation = case_when(Shore == "Inshore" ~ Elevation,
-  #                              Shore == "Offshore" & slab_layer == "D" ~ Elevation + SDepth,
-  #                              Shore == "Offshore" & slab_layer == "S" ~ -SDepth,)) %>% 
-  mutate(Elevation = c(Depths[3,1], Depths[1,1], Depths[2,1])) %>%          # Pulls Mike's original depths instead of GEBCO 
+  mutate(Elevation = case_when(Shore == "Inshore" ~ Elevation,
+                               Shore == "Offshore" & slab_layer == "D" ~ Elevation + SDepth,
+                               Shore == "Offshore" & slab_layer == "S" ~ -SDepth,)) %>%
   mutate(Volume = area * abs(Elevation)) %>% 
   dplyr::select(Shore, slab_layer, Volume)
 
@@ -135,9 +132,9 @@ My_Rivers <- readRDS("./Objects/NE River input.rds") %>%
   ungroup() %>%
   arrange(as.numeric(Month))                                                # Order by month to match template
  
-# My_Stress <- readRDS("./Objects/Habitat disturbance.rds") %>%
-#   mutate(Month = factor(Month, levels = month.name)) %>%                    # Set month as a factor for non-alphabetical ordering
-#   arrange(Month)                                                            # Arrange to match template
+ My_Stress <- readRDS("./Objects/Habitat disturbance.rds") %>%
+   mutate(Month = factor(Month, levels = month.name)) %>%                    # Set month as a factor for non-alphabetical ordering
+   arrange(Month)                                                            # Arrange to match template
  
 My_Waves <- readRDS("./Objects/Significant wave height.rds") %>%
   mutate(Month = month(Date),
@@ -156,7 +153,7 @@ Physics_new <- mutate(Physics_template, SLight = My_light$Light,
                      D_OceanIN = filter(My_H_Flows, slab_layer == "D", Shore == "Offshore", Neighbour == "Ocean", Direction == "In")$Flow,
                      SI_OceanIN = filter(My_H_Flows, slab_layer == "S", Shore == "Inshore", Neighbour == "Ocean", Direction == "In")$Flow,
                      SI_OceanOUT = filter(My_H_Flows, slab_layer == "S", Shore == "Inshore", Neighbour == "Ocean", Direction == "Out")$Flow,
-                     SO_SI_flow = filter(My_H_Flows, slab_layer == "S", Shore == "Offshore", Neighbour == "Inshore", Direction == "Out")$Flow,
+                     SO_SI_flow = 100 * filter(My_H_Flows, slab_layer == "S", Shore == "Offshore", Neighbour == "Inshore", Direction == "Out")$Flow,
                      # ## log e transformed suspended particulate matter concentration in zones
                      SO_LogeSPM = log(filter(My_SPM, Shore == "Offshore")$SPM),  
                      SI_LogeSPM = log(filter(My_SPM, Shore == "Inshore")$SPM),
@@ -169,12 +166,12 @@ Physics_new <- mutate(Physics_template, SLight = My_light$Light,
                      ## Vertical diffusivity
                      log10Kvert = log10(My_V_Diff$V_diff),
                      ## Daily proportion disturbed by natural bed shear stress
-                     # habS1_pdist = filter(My_Stress, Shore == "Inshore", Habitat == "Silt")$Disturbance,
-                     # habS2_pdist = filter(My_Stress, Shore == "Inshore", Habitat == "Sand")$Disturbance,
-                     # habS3_pdist = filter(My_Stress, Shore == "Inshore", Habitat == "Gravel")$Disturbance,
-                     # habD1_pdist = filter(My_Stress, Shore == "Offshore", Habitat == "Silt")$Disturbance,
-                     # habD2_pdist = filter(My_Stress, Shore == "Offshore", Habitat == "Sand")$Disturbance,
-                     # habD3_pdist = filter(My_Stress, Shore == "Offshore", Habitat == "Gravel")$Disturbance,
+                     habS1_pdist = filter(My_Stress, Shore == "Inshore", Habitat == "Silt")$Disturbance,
+                     habS2_pdist = filter(My_Stress, Shore == "Inshore", Habitat == "Sand")$Disturbance,
+                     habS3_pdist = filter(My_Stress, Shore == "Inshore", Habitat == "Gravel")$Disturbance,
+                     habD1_pdist = filter(My_Stress, Shore == "Offshore", Habitat == "Silt")$Disturbance,
+                     habD2_pdist = filter(My_Stress, Shore == "Offshore", Habitat == "Sand")$Disturbance,
+                     habD3_pdist = filter(My_Stress, Shore == "Offshore", Habitat == "Gravel")$Disturbance,
                      # ## Monthly mean significant wave height inshore
                      Inshore_waveheight = My_Waves$Waves,
                      # ## Overhang variables
