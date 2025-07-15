@@ -50,11 +50,11 @@ fleet_daily = DataFrame(read_parquet("../../Spatial Data/fishing_effort_data/Glo
 # fleet_daily.geometry = [GI.Point(coord; crs = GFT.EPSG(4326)) for coord in tuple.(fleet_daily.cell_ll_lon, fleet_daily.cell_ll_lat)]
 fleet_daily.geometry = AG.createpoint.(tuple.(fleet_daily.cell_ll_lon, fleet_daily.cell_ll_lat))
 
-mmsi_daily = DataFrame(read_parquet("../../Spatial Data/fishing_effort_data/Global_fishing_watch/mmsi-daily.parq"))
-mmsi_daily.geometry = AG.createpoint.(tuple.(mmsi_daily.cell_ll_lon, mmsi_daily.cell_ll_lat))
+# mmsi_daily = DataFrame(read_parquet("../../Spatial Data/fishing_effort_data/Global_fishing_watch/mmsi-daily.parq"))
+# mmsi_daily.geometry = AG.createpoint.(tuple.(mmsi_daily.cell_ll_lon, mmsi_daily.cell_ll_lat))
 
-fleet_monthly = DataFrame(read_parquet("../../Spatial Data/fishing_effort_data/Global_fishing_watch/fleet-monthly.parq"))
-fleet_monthly.geometry = AG.createpoint.(tuple.(fleet_monthly.cell_ll_lon, fleet_monthly.cell_ll_lat))
+# fleet_monthly = DataFrame(read_parquet("../../Spatial Data/fishing_effort_data/Global_fishing_watch/fleet-monthly.parq"))
+# fleet_monthly.geometry = AG.createpoint.(tuple.(fleet_monthly.cell_ll_lon, fleet_monthly.cell_ll_lat))
 
 # Filter the fleet daily data to the domain region
 fleet_daily_domain = point_polygon_intersection(fleet_daily_domain, domain_poly)
@@ -65,27 +65,27 @@ write_parquet("../../Spatial Data/fishing_effort_data/Global_fishing_watch/fleet
 fleet_daily_sau_area = point_polygon_intersection(fleet_daily, sau_area_poly)
 write_parquet("../../Spatial Data/fishing_effort_data/Global_fishing_watch/fleet-daily-sau_area.parq", fleet_daily_sau_area[:, Not(:geometry)])
 
-fleet_daily = nothing
-GC.gc()
+# fleet_daily = nothing
+# GC.gc()
 
-# Filter the mmsi daily data to the domain region
-mmsi_daily_domain = point_polygon_intersection(mmsi_daily, domain_poly)
-write_parquet("../../Spatial Data/fishing_effort_data/Global_fishing_watch/mmsi-daily-domain.parq", mmsi_daily_domain[:, Not(:geometry)])
+# # Filter the mmsi daily data to the domain region
+# mmsi_daily_domain = point_polygon_intersection(mmsi_daily, domain_poly)
+# write_parquet("../../Spatial Data/fishing_effort_data/Global_fishing_watch/mmsi-daily-domain.parq", mmsi_daily_domain[:, Not(:geometry)])
 
-# Filter the mmsi daily data to the sau_area region
-mmsi_daily_sau_area = point_polygon_intersection(mmsi_daily, sau_area_poly)
-write_parquet("../../Spatial Data/fishing_effort_data/Global_fishing_watch/mmsi-daily-sau_area.parq", mmsi_daily_sau_area[:, Not(:geometry)])
+# # Filter the mmsi daily data to the sau_area region
+# mmsi_daily_sau_area = point_polygon_intersection(mmsi_daily, sau_area_poly)
+# write_parquet("../../Spatial Data/fishing_effort_data/Global_fishing_watch/mmsi-daily-sau_area.parq", mmsi_daily_sau_area[:, Not(:geometry)])
 
-mmsi_daily = nothing
-GC.gc()
+# mmsi_daily = nothing
+# GC.gc()
 
-# Filter the fishing monthly data to the domain region
-fleet_monthly_domain = point_polygon_intersection(fleet_monthly, domain_poly)
-write_parquet("../../Spatial Data/fishing_effort_data/Global_fishing_watch/fleet-monthly-domain.parq", fleet_monthly_domain[:, Not(:geometry)])
+# # Filter the fishing monthly data to the domain region
+# fleet_monthly_domain = point_polygon_intersection(fleet_monthly, domain_poly)
+# write_parquet("../../Spatial Data/fishing_effort_data/Global_fishing_watch/fleet-monthly-domain.parq", fleet_monthly_domain[:, Not(:geometry)])
 
-# Filter the fishing monthly data to the sau_area region
-fleet_monthly_sau_area = point_polygon_intersection(fleet_monthly, sau_area_poly)
-write_parquet("../../Spatial Data/fishing_effort_data/Global_fishing_watch/fleet-monthly-sau_area.parq", fleet_monthly_sau_area[:, Not(:geometry)])
+# # Filter the fishing monthly data to the sau_area region
+# fleet_monthly_sau_area = point_polygon_intersection(fleet_monthly, sau_area_poly)
+# write_parquet("../../Spatial Data/fishing_effort_data/Global_fishing_watch/fleet-monthly-sau_area.parq", fleet_monthly_sau_area[:, Not(:geometry)])
 
-fleet_monthly = nothing
-GC.gc()
+# fleet_monthly = nothing
+# GC.gc()
