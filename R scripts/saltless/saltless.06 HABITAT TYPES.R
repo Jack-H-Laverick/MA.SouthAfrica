@@ -16,12 +16,12 @@ domains <- readRDS("./Objects/Domains.rds") %>%                  # Load SF polyg
 polygons <- readRDS("./Data/Habitats.rds") %>%                   # Ben's Map
   st_make_valid()
 
+sf_use_s2(FALSE)
+
 #### Cleaning ####
 
 ggplot(polygons) +                                               # Lots of whispy bits
   geom_sf(aes(fill = Habitat))
-
-sf_use_s2(FALSE)
 
 sand <- filter(polygons, Habitat == "sand", Shore == "Offshore") # Work on just the worst polygon 
 plot(sand)
@@ -45,7 +45,9 @@ final <- st_difference(bbp, test) %>%                            # Cut the negat
 plot(final)
 
 new_polygons <- filter(polygons, paste(Habitat, Shore) != "sand Offshore") %>% # Remove the old polygon
-  bind_rows(final)                                               # and add in the cleaned one
+  bind_rows(final) %>%                                              # and add in the cleaned one
+  mutate(Habitat = str_to_title(Habitat)) %>% 
+  mutate(Habitat = ifelse(Habitat == "Mud", "Silt", Habitat))
 
 ggplot(new_polygons) +
   geom_sf(aes(fill = Habitat), alpha = 0.5)                      # No obvious overlaps
