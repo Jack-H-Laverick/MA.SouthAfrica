@@ -110,11 +110,11 @@ map <- ggplot() +
   NULL
 ggsave_map("./Figures/bathymetry/Domains.png", map)
 
-ggplot() +
-  geom_stars(data = st_as_stars(GFW) %>% st_transform(crs)) +
-  geom_sf(data = world, size = 0.1, fill = "white") +
-  zoom +
-  theme_minimal() +
-  NULL
-  
-ggsave_map("./Figures/bathymetry/Distance.png", last_plot())
+# ggplot() +
+#   geom_stars(data = st_as_stars(GFW) %>% st_transform(crs)) +
+#   geom_sf(data = world, size = 0.1, fill = "white") +
+#   zoom +
+#   theme_minimal() +
+#   NULL
+#   
+# ggsave_map("./Figures/bathymetry/Distance.png", last_plot())
