@@ -1,21 +1,21 @@
-
 ## Overwrite the entries in the example Celtic Sea event timing parameters file
 
 #### Setup ####
 
-rm(list=ls())                                                               # Wipe the brain
+rm(list = ls()) # Wipe the brain
 library(tidyverse)
 library(sf)
 source("./R scripts/@_Region file.R")
+source("./R scripts/@_Region file.R")
 
-Events <- read.csv(stringr::str_glue("./StrathE2E/{implementation}/2010-2019/Param/event_timing_CELTIC_SEA_2003-2013.csv")) # Read in example Physical drivers
+Events <- readxl::read_excel("./Data/event_timing_constructed_15_07.xlsx") # Read in example Physical drivers
 
 #### Last minute data manipulation ####
 
-area <- readRDS("./Objects/Domains.rds") %>%                            # Calculate surface area
-  st_transform(crs= 4326) %>% 
-  st_area() %>% 
-  as.numeric(.)/1e6                                                     # Convert m^2 to km^2 
+area <- readRDS("./Objects/Domains.rds") %>% # Calculate surface area
+    st_union() %>%
+    st_area() %>%
+    as.numeric(.) / 1e6 # Convert m^2 to km^2
 
 #### Update event timings file ####
 
@@ -42,7 +42,7 @@ area <- readRDS("./Objects/Domains.rds") %>%                            # Calcul
 # Events[17,"Value"] <- 0 # Migratory_fish_switch_(0=off_1=on)
 # Events[18,"Value"] <- 0 # Migratory_fish_ocean_biomass_(Tonnes_wet_weight)
 # Events[19,"Value"] <- 0 # Migratory_fish_carbon_to_wet_weight_(g/g)
- Events[20,"Value"] <- sum(area) # Model_domain_sea_surface_area_(km2)
+Events[20, "Value"] <- sum(area) # Model_domain_sea_surface_area_(km2)
 # Events[21,"Value"] <- 0 # Propn_of_ocean_population_entering_model_domain_each_year
 # Events[22,"Value"] <- 0 # Imigration_start_day
 # Events[23,"Value"] <- 0 # Imigration_end_day_(must_be_later_than_start_day_even_if_migration_disabled)
@@ -51,5 +51,6 @@ area <- readRDS("./Objects/Domains.rds") %>%                            # Calcul
 # Events[26,"Value"] <- 0 # Emigration_end_day_(must_be_later_than_start_day_even_if_migration_disabled)
 
 write.csv(Events,
-          file = stringr::str_glue("./StrathE2E/{implementation}/2010-2019/Param/event_timing_{toupper(implementation)}_2010-2019.csv"), 
-          row.names = F)
+    file = stringr::str_glue("./StrathE2E/Models/{implementation}/2010-2019/Param/event_timing_{toupper(implementation)}_2010-2019.csv"),
+    row.names = F
+)
