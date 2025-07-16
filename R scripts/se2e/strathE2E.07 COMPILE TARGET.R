@@ -68,4 +68,4 @@ discard_target <- read.csv("./Objects/guild_discards_target_data.csv") %>%
     select(Annual_measure, SD_of_measure, Name, Time_period, Source, Region)
 target_data <- rows_update(target_data, discard_target, by = "Name")
 
-write.csv(target_data, glue("./Objects/annual_observed_{implementation}_{start_year}-{end_year}.csv"), row.names = FALSE)
+write.csv(target_data, glue("./StrathE2E/Models/{implementation}/2010-2019/Param/annual_observed_{implementation}_{start_year}-{end_year}.csv"), row.names = FALSE)
