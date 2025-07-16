@@ -8,7 +8,7 @@ source("./R Scripts/@_model_config.R")
 
 domain <- readRDS("./Objects/Domains.rds")
 domain_size <- readRDS("./Objects/Domains.rds") %>% # We need landings as tonnes per m^2
-    st_transform(crs = 9822) %>%
+    st_transform(crs = 4326) %>%
     sf::st_union() %>%
     sf::st_area() %>%
     as.numeric()
@@ -232,8 +232,4 @@ annual_effort_gears <- mutate(annual_effort_gears, Activity_.s.m2.d. = Activity_
 north_sea_plough_rate <- read.csv("./Data/fishing_activity_NORTH_SEA_2003-2013.csv")
 annual_effort_gears[annual_effort_gears$Gear_code == "DMT", ]$Plough_rate_.m2.s. <- north_sea_plough_rate[north_sea_plough_rate$Gear_code == "OT", ]$Plough_rate_.m2.s.
 
-# Need to convert values to seconds/time based units
-# Need to ask about plough rate
-# Need to calculate
-
-write.csv(annual_effort_gears, glue("./Objects/fishing_activity_{domain_name}_{start_year}-{end_year}.csv"), row.names = FALSE)
+write.csv(annual_effort_gears, glue("./Objects/fishing_activity_{implementation}_{start_year}-{end_year}.csv"), row.names = FALSE)

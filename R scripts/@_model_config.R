@@ -1,8 +1,6 @@
 start_year <- 2010
 end_year <- 2019
 
-domain_name <- "SOUTHERN_BENGUELA"
-
 strathe2e_gear_types <- c(
     "MWT" = "midwater trawl",
     "NTS" = "nets including small scale",
