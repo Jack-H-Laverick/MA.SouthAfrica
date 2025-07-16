@@ -232,4 +232,4 @@ annual_effort_gears <- mutate(annual_effort_gears, Activity_.s.m2.d. = Activity_
 north_sea_plough_rate <- read.csv("./Data/fishing_activity_NORTH_SEA_2003-2013.csv")
 annual_effort_gears[annual_effort_gears$Gear_code == "DMT", ]$Plough_rate_.m2.s. <- north_sea_plough_rate[north_sea_plough_rate$Gear_code == "OT", ]$Plough_rate_.m2.s.
 
-write.csv(annual_effort_gears, glue("./Objects/fishing_activity{toupper{implementation}}_{start_year}-{end_year}.csv"), row.names = FALSE)
+write.csv(annual_effort_gears, glue("./Objects/fishing_activity{implementation}_{start_year}-{end_year}.csv"), row.names = FALSE)
