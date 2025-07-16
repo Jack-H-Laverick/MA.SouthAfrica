@@ -177,7 +177,7 @@ discards_rates_data <- discards_matrix_data %>%
         values_from = annual_average_discard_rate,
         names_prefix = "Discardrate_"
     )
-write.csv(discards_rates_data, glue("./Objects/fishing_discards_{implementation}_{start_year}-{end_year}.csv", row.names = FALSE))
+write.csv(discards_rates_data, glue("./Objects/fishing_discards_{implementation}_{start_year}-{end_year}.csv"), row.names = FALSE)
 
 # Calculate bird, seal and cetacean discards in mMN/m^2/y
 discard_weight_target <- discards_matrix_data %>%
