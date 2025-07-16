@@ -297,4 +297,4 @@ habitat_activity_final$Gear_name <- strathe2e_gear_types[habitat_activity_final$
 habitat_activity_final <- habitat_activity_final %>%
     select(c(Gear_name, Gear_code, Habitat_s0, Habitat_s1, Habitat_s2, Habitat_s3, Habitat_d0, Habitat_d1, Habitat_d2, Habitat_d3))
 
-write.csv(habitat_activity_final, glue("./Objects/fishing_distribution{toupper{implementation}}_{start_year}-{end_year}.csv"), row.names = FALSE)
+write.csv(habitat_activity_final, glue("./Objects/fishing_distribution{implementation}_{start_year}-{end_year}.csv"), row.names = FALSE)
