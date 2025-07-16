@@ -2,6 +2,7 @@ library(readxl)
 library(tidyverse)
 library(glue)
 
+source("@_Region file.R")
 source("@_model_config.R")
 
 annual_template <- read_excel("./Data/annual_observed_SB_revised_v2.xlsx")

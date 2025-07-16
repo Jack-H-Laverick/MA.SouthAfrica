@@ -6,7 +6,6 @@ rm(list = ls()) # Wipe the brain
 library(tidyverse)
 library(sf)
 source("./R scripts/@_Region file.R")
-source("./R scripts/@_Region file.R")
 
 Events <- readxl::read_excel("./Data/event_timing_constructed_15_07.xlsx") # Read in example Physical drivers
 

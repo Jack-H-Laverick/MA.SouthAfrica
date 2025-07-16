@@ -6,36 +6,36 @@ source("./R scripts/@_model_config.R")
 
 # Copy ready fishing activity file
 file.copy(
-    from = "./Objects/fishing_activity{implementation}_{start_year}-{end_year}.csv",
-    to = "./StrathE2E/Models/{implementation}/2010-2019/Param/fishing_activity{toupper(implementation)}_{start_year}-{end_year}.csv",
+    from = str_glue("./Objects/fishing_activity{implementation}_{start_year}-{end_year}.csv"),
+    to = str_glue("./StrathE2E/Models/{implementation}/2010-2019/Param/fishing_activity{toupper(implementation)}_{start_year}-{end_year}.csv"),
     overwrite = TRUE
 )
 
 # Copy fishing distribution file
 file.copy(
-    from = "./Objects/fishing_distribution{implementation}_{start_year}-{end_year}.csv",
-    to = "./StrathE2E/Models/{implementation}/2010-2019/Param/fishing_distribution{toupper(implementation)}_{start_year}-{end_year}.csv",
+    from = str_glue("./Objects/fishing_distribution{implementation}_{start_year}-{end_year}.csv"),
+    to = str_glue("./StrathE2E/Models/{implementation}/2010-2019/Param/fishing_distribution{toupper(implementation)}_{start_year}-{end_year}.csv"),
     overwrite = TRUE
 )
 
 # Copy fishing power
 file.copy(
-    from = glue("./Objects/fishing_power{implementation}_{start_year}-{end_year}.csv"),
-    to = "./StrathE2E/Models/{implementation}/2010-2019/Param/fishing_activity{toupper(implementation)}_{start_year}-{end_year}.csv",
+    from = str_glue("./Objects/fishing_power{implementation}_{start_year}-{end_year}.csv"),
+    to = str_glue("./StrathE2E/Models/{implementation}/2010-2019/Param/fishing_activity{toupper(implementation)}_{start_year}-{end_year}.csv"),
     overwrite = TRUE
 )
 
 # Copy fishing discards
 file.copy(
-    from = glue("./Objects/fishing_discards{implementation}_{start_year}-{end_year}.csv"),
-    to = "./StrathE2E/Models/{implementation}/2010-2019/Param/fishing_discards{toupper(implementation)}_{start_year}-{end_year}.csv",
+    from = str_glue("./Objects/fishing_discards{implementation}_{start_year}-{end_year}.csv"),
+    to = str_glue("./StrathE2E/Models/{implementation}/2010-2019/Param/fishing_discards{toupper(implementation)}_{start_year}-{end_year}.csv"),
     overwrite = TRUE
 )
 
 # Copy fishing processing
 file.copy(
-    from = glue("./Objects/fishing_processing{implementation}_{start_year}-{end_year}.csv"),
-    to = "./StrathE2E/Models/{implementation}/2010-2019/Param/fishing_discards{toupper(implementation)}_{start_year}-{end_year}.csv",
+    from = str_glue("./Objects/fishing_processing{implementation}_{start_year}-{end_year}.csv"),
+    to = str_glue("./StrathE2E/Models/{implementation}/2010-2019/Param/fishing_discards{toupper(implementation)}_{start_year}-{end_year}.csv"),
     overwrite = TRUE
 )
 
@@ -48,4 +48,4 @@ fishing_gear_linkage <- data.frame(
     Linkage_coefficient = rep(NA, 12),
     Comments = rep(NA, 12)
 )
-write.csv(fishing_gear_linkage, glue("./StrathE2E/Models/{implementation}/2010-2019/Param/fishing_gear_linkages{toupper(implementation)}_{start_year}-{end_year}.csv"), row.names = FALSE)
+write.csv(fishing_gear_linkage, str_glue("./StrathE2E/Models/{implementation}/2010-2019/Param/fishing_gear_linkages{toupper(implementation)}_{start_year}-{end_year}.csv"), row.names = FALSE)
