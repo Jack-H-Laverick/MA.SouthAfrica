@@ -50,6 +50,6 @@ Events[20, "Value"] <- sum(area) # Model_domain_sea_surface_area_(km2)
 # Events[26,"Value"] <- 0 # Emigration_end_day_(must_be_later_than_start_day_even_if_migration_disabled)
 
 write.csv(Events,
-    file = stringr::str_glue("./StrathE2E/Models/{implementation}/2010-2019/Param/event_timing_{toupper(implementation)}_2010-2019.csv"),
+    file = stringr::str_glue("./StrathE2E/{implementation}/2010-2019/Param/event_timing_{toupper(implementation)}_2010-2019.csv"),
     row.names = F
 )

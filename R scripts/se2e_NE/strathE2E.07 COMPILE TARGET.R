@@ -2,8 +2,8 @@ library(readxl)
 library(tidyverse)
 library(glue)
 
-source("@_Region file.R")
-source("@_model_config.R")
+source("./R scripts/@_Region file.R")
+source("./R scripts/@_model_config.R")
 
 annual_template <- read_excel("./Data/annual_observed_SB_revised_v2.xlsx")
 annual_template$Annual_measure <- as.numeric(annual_template$Annual_measure)
@@ -73,7 +73,7 @@ discard_target <- read.csv("./Objects/guild_discards_target_data.csv") %>%
     select(Annual_measure, SD_of_measure, Name, Time_period, Source, Region)
 annual_template <- rows_update(annual_template, discard_target, by = "Name")
 
-targets <- read.csv(stringr::str_glue("./Objects/fitting/PP_target{toupper{implementation}}.csv"))
+targets <- read.csv(stringr::str_glue("./Objects/fitting/PP_target_{toupper(implementation)}.csv"))
 
 annual_new <- mutate(annual_template,
     Annual_measure = case_when(
@@ -89,6 +89,6 @@ annual_new <- mutate(annual_template,
 
 # Switch on all filled target values
 annual_new <- annual_new %>%
-    mutate(Use1_0 = if_else(!is.na(Annual_measure) && !is.na(SD_of_measure), 1, 0))
+    mutate(Use1_0 = if_else(is.finite(Annual_measure), 1, 0))
 
-write.csv(annual_new, glue("./StrathE2E/Models/{implementation}/2010-2019/Param/annual_observed_{toupper(implementation)}_{start_year}-{end_year}.csv"), row.names = FALSE)
+write.csv(annual_new, glue("./StrathE2E/{implementation}/2010-2019/Param/annual_observed_{toupper(implementation)}_{start_year}-{end_year}.csv"), row.names = FALSE)
