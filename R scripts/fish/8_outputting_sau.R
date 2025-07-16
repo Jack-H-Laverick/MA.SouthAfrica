@@ -18,7 +18,7 @@ domain_size <- readRDS("./Objects/Domains.rds") %>% # We need landings as tonnes
 
 known_species <- read.csv("./Objects/updated_known_fish_guilds.csv", row.names = 1)
 
-annual_effort_gears <- read.csv(glue("./Objects/fishing_activity_{implementation}_{start_year}-{end_year}.csv"))
+annual_effort_gears <- read.csv(glue("./Objects/fishing_activity{toupper{implementation}}_{start_year}-{end_year}.csv"))
 
 prop_sau_activity_in_domain <- read.csv("./Objects/proportion_sau_activity_in_domain.csv") %>%
     rename(gear_type_se2e = Gear_name)
@@ -164,7 +164,7 @@ catch_power_data <- catch_matrix_data %>%
         values_from = power,
         names_prefix = "Power_"
     )
-write.csv(catch_power_data, glue("./Objects/fishing_power_{implementation}_{start_year}-{end_year}.csv"), row.names = FALSE)
+write.csv(catch_power_data, glue("./Objects/fishing_power{toupper{implementation}}_{start_year}-{end_year}.csv"), row.names = FALSE)
 
 discards_rates_data <- discards_matrix_data %>%
     mutate(Gear_code = names(strathe2e_gear_types)[match(gear_type_se2e, strathe2e_gear_types)]) %>%
@@ -178,7 +178,7 @@ discards_rates_data <- discards_matrix_data %>%
         values_from = annual_average_discard_rate,
         names_prefix = "Discardrate_"
     )
-write.csv(discards_rates_data, glue("./Objects/fishing_discards_{implementation}_{start_year}-{end_year}.csv"), row.names = FALSE)
+write.csv(discards_rates_data, glue("./Objects/fishing_discards{toupper{implementation}}_{start_year}-{end_year}.csv"), row.names = FALSE)
 
 # Calculate bird, seal and cetacean discards in mMN/m^2/y
 discard_weight_target <- discards_matrix_data %>%
@@ -278,4 +278,4 @@ processing_matrix_data <- processing_matrix_data %>%
         names_prefix = "Propgutted_"
     )
 
-write.csv(processing_matrix_data, glue("./Objects/fishing_processing_{implementation}_{start_year}-{end_year}.csv"), row.names = FALSE)
+write.csv(processing_matrix_data, glue("./Objects/fishing_processing{toupper{implementation}}_{start_year}-{end_year}.csv"), row.names = FALSE)
