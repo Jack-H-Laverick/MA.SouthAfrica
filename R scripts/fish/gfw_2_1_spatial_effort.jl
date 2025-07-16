@@ -57,7 +57,7 @@ fleet_daily.geometry = AG.createpoint.(tuple.(fleet_daily.cell_ll_lon, fleet_dai
 # fleet_monthly.geometry = AG.createpoint.(tuple.(fleet_monthly.cell_ll_lon, fleet_monthly.cell_ll_lat))
 
 # Filter the fleet daily data to the domain region
-fleet_daily_domain = point_polygon_intersection(fleet_daily_domain, domain_poly)
+fleet_daily_domain = point_polygon_intersection(fleet_daily, domain_poly)
 write_parquet("../../Spatial Data/fishing_effort_data/Global_fishing_watch/fleet-daily-domain.parq", fleet_daily_domain[:, Not(:geometry)])
 
 # Filter the fleet daily data to the sau_area region
