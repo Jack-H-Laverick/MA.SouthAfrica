@@ -3,12 +3,12 @@
 packages <- c("tidyverse", "glue", "terra", "sf", "exactextractr")
 sapply(packages, library, character.only = TRUE)
 
-source("./R Scripts/@_Region file.R")
-source("./R Scripts/@_model_config.R")
+source("./R cripts/@_Region file.R")
+source("./R scripts/@_model_config.R")
 
 domain <- readRDS("./Objects/Domains.rds")
 domain_size <- readRDS("./Objects/Domains.rds") %>% # We need landings as tonnes per m^2
-    st_transform(crs = 4326) %>%
+    st_transform(crs = crs) %>%
     sf::st_union() %>%
     sf::st_area() %>%
     as.numeric()

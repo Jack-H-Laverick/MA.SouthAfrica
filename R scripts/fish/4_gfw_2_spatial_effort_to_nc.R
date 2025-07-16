@@ -7,7 +7,7 @@ source("./R scripts/fish/fishing_spatial_functions.R")
 
 # Perform spatial filtering of fishing event points in Domain and SAU area in Julia for extra performance ----
 domain <- readRDS("./Objects/Domains.rds")
-system(paste('Julia --project=@. --threads=auto "R Scripts/fish/gfw_2_1_spatial_effort.jl"'))
+system(paste('Julia --project=@. --threads=auto "R scripts/fish/gfw_2_1_spatial_effort.jl"'))
 
 # Process data for domain area.
 bbox <- st_bbox(domain)

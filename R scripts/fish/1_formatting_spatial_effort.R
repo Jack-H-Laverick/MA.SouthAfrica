@@ -6,7 +6,7 @@ library(glue)
 library(stringr)
 library(dplyr)
 
-source("./R Scripts/@_Region file.R")
+source("./R scripts/@_Region file.R")
 
 # Load habitat map
 habitats <- readRDS("./Objects/Habitats.rds")

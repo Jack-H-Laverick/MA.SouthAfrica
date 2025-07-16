@@ -2,7 +2,7 @@
 # mainly using SANBI relative effort raster data.
 
 source("./R scripts/@_Region file.R")
-source("./R Scripts/@_model_config.R")
+source("./R scripts/@_model_config.R")
 source("./R scripts/fish/fishing_spatial_functions.R")
 
 # Load habitat map

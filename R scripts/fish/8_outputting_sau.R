@@ -7,10 +7,11 @@ library(sf)
 library(ggplot2)
 library(glue)
 
-source("./R Scripts/@_model_config.R")
+source("./R scripts/@_model_config.R")
+source("./R scripts/@_Region_file.R")
 
 domain_size <- readRDS("./Objects/Domains.rds") %>% # We need landings as tonnes per m^2
-    st_transform(crs = 4326) %>%
+    st_transform(crs = crs) %>%
     sf::st_union() %>%
     sf::st_area() %>%
     as.numeric()
