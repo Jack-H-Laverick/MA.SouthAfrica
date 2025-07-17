@@ -8,20 +8,20 @@ unlink(stringr::str_glue("./StrathE2E/{implementation}/2010-2019/Param/physical_
 unlink(stringr::str_glue("./StrathE2E/{implementation}/2010-2019/Driving/physics_CELTIC_SEA_MA_2010-2019-CNRM-ssp126.csv"))     # Delete old file
 unlink(stringr::str_glue("./StrathE2E/{implementation}/2010-2019/Param/event_timing_CELTIC_SEA_MA_2010-2019.csv"))
 
-# unlink(stringr::str_glue("./StrathE2E/{implementation}/2010-2019-{ssp}/Param/fishing_fleet_CELTIC_SEA_2003-2013.csv"))
+# unlink(stringr::str_glue("./StrathE2E/{implementation}/2010-2019/Param/fishing_fleet_CELTIC_SEA_2003-2013.csv"))
 unlink(stringr::str_glue("./StrathE2E/{implementation}/2010-2019/Param/fishing_activity_CELTIC_SEA_MA_2010-2019.csv"))
 unlink(stringr::str_glue("./StrathE2E/{implementation}/2010-2019/Param/fishing_power_CELTIC_SEA_MA_2010-2019.csv"))
 unlink(stringr::str_glue("./StrathE2E/{implementation}/2010-2019/Param/fishing_discards_CELTIC_SEA_MA_2010-2019.csv"))
 
 
 
-# unlink(stringr::str_glue("./StrathE2E/{implementation}/2010-2019-{ssp}/Param/fishing_processing_CELTIC_SEA.csv"))
+# unlink(stringr::str_glue("./StrathE2E/{implementation}/2010-2019/Param/fishing_processing_CELTIC_SEA.csv"))
 unlink(stringr::str_glue("./StrathE2E/{implementation}/2010-2019/Param/fishing_distribution_CELTIC_SEA_MA_2010-2019.csv"))
-# unlink(stringr::str_glue("./StrathE2E/{implementation}/2010-2019-{ssp}/Param/fishing_gear_multiplier.csv"))
- unlink(stringr::str_glue("./StrathE2E/{implementation}/2010-2019-{ssp}/Param/fishing_gear_linkages.csv"))
+# unlink(stringr::str_glue("./StrathE2E/{implementation}/2010-2019/Param/fishing_gear_multiplier.csv"))
+ unlink(stringr::str_glue("./StrathE2E/{implementation}/2010-2019/Param/fishing_gear_linkages.csv"))
 # 
-# unlink(stringr::str_glue("./StrathE2E/{implementation}/2010-2019-{ssp}/Target/annual_observed_CELTIC_SEA_2003-2013.csv"))
-# unlink(stringr::str_glue("./StrathE2E/{implementation}/2010-2019-{ssp}/Target/monthly_observed_CELTIC_SEA_2003-2013.csv"))
+# unlink(stringr::str_glue("./StrathE2E/{implementation}/2010-2019/Target/annual_observed_CELTIC_SEA_2003-2013.csv"))
+# unlink(stringr::str_glue("./StrathE2E/{implementation}/2010-2019/Target/monthly_observed_CELTIC_SEA_2003-2013.csv"))
 
 # Update file which tells StrathE2E where to find driving files
 
