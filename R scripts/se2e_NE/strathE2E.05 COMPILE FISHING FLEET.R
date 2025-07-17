@@ -11,7 +11,7 @@ if (nrow(activity) < 12) {
     activity <- rbind(
         activity,
         setNames(
-            data.frame(matrix(NA, ncol = ncol(activity), nrow = missing_rows)),
+            data.frame(cbind(matrix(NA, ncol = 2, nrow = missing_rows), matrix(0, ncol = ncol(activity) - 2, nrow = missing_rows))),
             colnames(activity)
         )
     )
@@ -25,7 +25,7 @@ if (nrow(distribution) < 12) {
     distribution <- rbind(
         distribution,
         setNames(
-            data.frame(matrix(NA, ncol = ncol(distribution), nrow = missing_rows)),
+            data.frame(cbind(matrix(NA, ncol = 2, nrow = missing_rows), matrix(0, ncol = ncol(distribution) - 2, nrow = missing_rows))),
             colnames(distribution)
         )
     )
@@ -39,7 +39,7 @@ if (nrow(power) < 12) {
     power <- rbind(
         power,
         setNames(
-            data.frame(matrix(NA, ncol = ncol(power), nrow = missing_rows)),
+            data.frame(cbind(matrix(NA, ncol = 2, nrow = missing_rows), matrix(0, ncol = ncol(power) - 2, nrow = missing_rows))),
             colnames(power)
         )
     )
@@ -53,7 +53,7 @@ if (nrow(discards) < 12) {
     discards <- rbind(
         discards,
         setNames(
-            data.frame(matrix(NA, ncol = ncol(discards), nrow = missing_rows)),
+            data.frame(cbind(matrix(NA, ncol = 2, nrow = missing_rows), matrix(0, ncol = ncol(discards) - 2, nrow = missing_rows))),
             colnames(discards)
         )
     )
@@ -67,7 +67,7 @@ if (nrow(processing) < 12) {
     processing <- rbind(
         processing,
         setNames(
-            data.frame(matrix(NA, ncol = ncol(processing), nrow = missing_rows)),
+            data.frame(cbind(matrix(NA, ncol = 2, nrow = missing_rows), matrix(0, ncol = ncol(processing) - 2, nrow = missing_rows))),
             colnames(processing)
         )
     )
@@ -80,7 +80,7 @@ fishing_gear_linkage <- data.frame(
     Gear_name = c(unname(strathe2e_gear_types), rep(NA, 12 - length(strathe2e_gear_types))),
     Gear_code = c(names(strathe2e_gear_types), rep(NA, 12 - length(strathe2e_gear_types))),
     Gear_to_which_linked = rep(NA, 12),
-    Linkage_coefficient = rep(NA, 12),
+    Linkage_coefficient = rep(0, 12),
     Comments = rep(NA, 12)
 )
 write.csv(fishing_gear_linkage, str_glue("./StrathE2E/{implementation}/2010-2019/Param/fishing_gear_linkages_{toupper(implementation)}_{start_year}-{end_year}.csv"), row.names = FALSE)
