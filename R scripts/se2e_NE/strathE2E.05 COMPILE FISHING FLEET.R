@@ -21,7 +21,7 @@ file.copy(
 # Copy fishing power
 file.copy(
     from = str_glue("./Objects/fishing_power_{implementation}_{start_year}-{end_year}.csv"),
-    to = str_glue("./StrathE2E/{implementation}/2010-2019/Param/fishing_activity_{toupper(implementation)}_{start_year}-{end_year}.csv"),
+    to = str_glue("./StrathE2E/{implementation}/2010-2019/Param/fishing_power_{toupper(implementation)}_{start_year}-{end_year}.csv"),
     overwrite = TRUE
 )
 
