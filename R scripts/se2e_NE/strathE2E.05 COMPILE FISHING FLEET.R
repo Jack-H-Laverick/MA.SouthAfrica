@@ -35,7 +35,7 @@ file.copy(
 # Copy fishing processing
 file.copy(
     from = str_glue("./Objects/fishing_processing_{implementation}_{start_year}-{end_year}.csv"),
-    to = str_glue("./StrathE2E/{implementation}/2010-2019/Param/fishing_discards_{toupper(implementation)}_{start_year}-{end_year}.csv"),
+    to = str_glue("./StrathE2E/{implementation}/2010-2019/Param/fishing_processing_{toupper(implementation)}_{start_year}-{end_year}.csv"),
     overwrite = TRUE
 )
 
