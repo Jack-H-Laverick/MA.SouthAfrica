@@ -30,7 +30,8 @@ if (nrow(distribution) < 12) {
         )
     )
 }
-cbind(distribution, data.frame(Habitat_DO = rep(0, 12)))
+
+distribution <- cbind(distribution, data.frame(Habitat_DO = rep(0, 12)))
 write.csv(distribution, str_glue("./StrathE2E/{implementation}/2010-2019/Param/fishing_distribution_{toupper(implementation)}_{start_year}-{end_year}.csv"), row.names = FALSE)
 
 # Copy fishing power
