@@ -16,8 +16,8 @@ unlink(stringr::str_glue("./StrathE2E/{implementation}/2010-2019/Param/fishing_d
 
 
 # unlink(stringr::str_glue("./StrathE2E/{implementation}/2010-2019/Param/fishing_processing_CELTIC_SEA.csv"))
-unlink(stringr::str_glue("./StrathE2E/{implementation}/2010-2019/Param/fishing_distribution_CELTIC_SEA_MA_2010-2019.csv"))
-# unlink(stringr::str_glue("./StrathE2E/{implementation}/2010-2019/Param/fishing_gear_multiplier.csv"))
+ unlink(stringr::str_glue("./StrathE2E/{implementation}/2010-2019/Param/fishing_distribution_CELTIC_SEA_MA_2010-2019.csv"))
+ unlink(stringr::str_glue("./StrathE2E/{implementation}/2010-2019/Param/fishing_gear_multiplier.csv"))
  unlink(stringr::str_glue("./StrathE2E/{implementation}/2010-2019/Param/fishing_gear_linkages.csv"))
 # 
 # unlink(stringr::str_glue("./StrathE2E/{implementation}/2010-2019/Target/annual_observed_CELTIC_SEA_2003-2013.csv"))
@@ -38,7 +38,7 @@ Setup_file[13,1] <- stringr::str_glue("fishing_power_{toupper(implementation)}_2
 Setup_file[14,1] <- stringr::str_glue("fishing_discards_{toupper(implementation)}_2010-2019.csv")
 Setup_file[15,1] <- stringr::str_glue("fishing_processing_{toupper(implementation)}_2010-2019.csv")
 Setup_file[16,1] <- stringr::str_glue("fishing_distribution_{toupper(implementation)}_2010-2019.csv")
-# Setup_file[17,1] <- stringr::str_glue("fishing_gear_multiplier_{toupper(implementation)}_2010-2019.csv")
+Setup_file[17,1] <- stringr::str_glue("fishing_gear_multiplier_{toupper(implementation)}_2010-2019.csv")
 # 
 Setup_file[20,1] <- stringr::str_glue("fishing_gear_linkages_{toupper(implementation)}_2010-2019.csv")
 
