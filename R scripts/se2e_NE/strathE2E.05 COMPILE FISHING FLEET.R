@@ -80,7 +80,15 @@ fishing_gear_linkage <- data.frame(
     Gear_name = c(unname(strathe2e_gear_types), rep(NA, 12 - length(strathe2e_gear_types))),
     Gear_code = c(names(strathe2e_gear_types), rep(NA, 12 - length(strathe2e_gear_types))),
     Gear_to_which_linked = rep(NA, 12),
-    Linkage_coefficient = rep(0, 12),
-    Comments = rep(NA, 12)
+    Linkage_coefficient = rep(NA, 12),
+    Comments = rep("Independent_of_other_gears", 12)
 )
 write.csv(fishing_gear_linkage, str_glue("./StrathE2E/{implementation}/2010-2019/Param/fishing_gear_linkages_{toupper(implementation)}_{start_year}-{end_year}.csv"), row.names = FALSE)
+
+# Create fishing gear multiplier file
+fishing_gear_multiplier <- data.frame(
+    Gear_name = c(unname(strathe2e_gear_types), rep(NA, 12 - length(strathe2e_gear_types))),
+    Gear_code = c(names(strathe2e_gear_types), rep(NA, 12 - length(strathe2e_gear_types))),
+    Multiplier_to_be_applied_to_activity = rep(1, 12)
+)
+write.csv(fishing_gear_multiplier, str_glue("./StrathE2E/{implementation}/2010-2019/Param/fishing_gear_multiplier_{toupper(implementation)}_{start_year}-{end_year}.csv"), row.names = FALSE)
