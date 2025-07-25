@@ -42,7 +42,7 @@ Setup_file[17,1] <- stringr::str_glue("fishing_gear_multiplier_{toupper(implemen
 # 
 Setup_file[20,1] <- stringr::str_glue("fishing_gear_linkages_{toupper(implementation)}_2010-2019.csv")
 
-# Setup_file[23,1] <- stringr::str_glue("annual_observed_{toupper(implementation)}_2010-2019.csv")
+ Setup_file[23,1] <- stringr::str_glue("annual_observed_{toupper(implementation)}_2010-2019.csv")
 # Setup_file[24,1] <- stringr::str_glue("monthly_observed_{toupper(implementation)}_2010-2019.csv")
 
 write.csv(Setup_file,
