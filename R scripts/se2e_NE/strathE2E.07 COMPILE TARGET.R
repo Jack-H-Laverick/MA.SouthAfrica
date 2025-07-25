@@ -91,4 +91,4 @@ annual_new <- mutate(annual_template,
 annual_new <- annual_new %>%
     mutate(Use1_0 = if_else(is.finite(Annual_measure), 1, 0))
 
-write.csv(annual_new, glue("./StrathE2E/{implementation}/2010-2019/Param/annual_observed_{toupper(implementation)}_{start_year}-{end_year}.csv"), row.names = FALSE)
+write.csv(annual_new, glue("./StrathE2E/{implementation}/2010-2019/Target/annual_observed_{toupper(implementation)}_2010-2019.csv"), row.names = FALSE)
