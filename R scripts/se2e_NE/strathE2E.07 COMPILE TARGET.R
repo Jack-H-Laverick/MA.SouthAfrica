@@ -32,7 +32,7 @@ annual_template[annual_template$Name == "Obs_KelpP", ]$Units <- "gC/m2/y"
 
 # Calculate the Standard Deviation of provided values as 75% of annual measure (before adding in SD of landings/WOA nitrate).
 annual_template <- annual_template %>%
-    mutate(SD_of_measure = if_else(!is.na(Annual_measure), 0.75 * Annual_measure, NA))
+    mutate(SD_of_measure = if_else(!is.na(Annual_measure), abs(0.75 * Annual_measure), NA))
 
 # Assign values from woa extracted nitrate concentrations to target data slots
 woa_nitrate <- read.csv("./Objects/woa23_nitrate_concentrations.csv") %>%
