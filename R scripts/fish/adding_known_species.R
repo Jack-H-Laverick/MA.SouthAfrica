@@ -1,0 +1,186 @@
+library(tidyverse)
+library(data.table)
+
+known_species <- read.csv("../../Fishing Data/MiMeMo fish guilds.csv", header = TRUE, sep = ";") %>%
+    select(!"X.1") %>%
+    mutate(Guild = if_else(Guild %in% c("Demersal (quota limited)", "Demersal (non quota)"), "Demersal", Guild))
+
+added_species_name <- c(
+    "Sardinops sagax",
+    "Etrumeus whiteheadi",
+    "Argyrozona argyrozona",
+    "Pterogymnus lanarius",
+    "Austroglossus microlepis",
+    "Jasus lalandii",
+    "Kajikia albida",
+    "Lampanyctodes hectoris",
+    "Austroglossus pectoralis",
+    "Chaceon maritae",
+    "Callorhinchus capensis",
+    "Petrus rupestris",
+    "Kajikia audax",
+    "Istiompax indica",
+    "Pseudopentaceros richardsoni",
+    "Notorynchus cepedianus",
+    "Cymatoceps nasutus",
+    "Acanthocybium solandri",
+    "Hyperoglyphe antarctica",
+    "Carcharodon carcharias",
+    "Triakis megalopterus",
+    "Galeocerdo cuvier",
+    "Lepidocybium flavobrunneum",
+    "Teuthida",
+    "Galeichthys feliceps",
+    "Trachurus capensis",
+    "Mugil cephalus",
+    "Liza tricuspidens"
+)
+added_common_name <- c(
+    "Pacific Sardine",
+    "Whitehead's Round Herring",
+    "Carpenter Seabream",
+    "Panga Seabream",
+    "West coast Sole",
+    "Cape rock lobster",
+    "White Marlin",
+    "Hector's Lanternfish",
+    "Mud Sole",
+    "West African Geryon",
+    "Cape Elephantfish",
+    "Red Steenbras",
+    "Striped Marlin",
+    "Black Marlin",
+    "Pelagic Armourhead",
+    "Broadnose Sevengill shark",
+    "Black Musselcracker",
+    "Wahoo",
+    "Barenose warehou",
+    "Great White Shark",
+    "Sharptooth Houndshark",
+    "Tiger Shark",
+    "Escolar",
+    "Squids",
+    "White barbel",
+    "Cape horse mackerel",
+    "Flathead grey mullet",
+    "Striped mullet"
+)
+added_groupname <- c(
+    "Sardine",
+    "Herring",
+    "Seabream",
+    "Seabream",
+    "Sole",
+    "Lobster",
+    "Marlin",
+    "Lanternfish",
+    "Sole",
+    "Crab",
+    "Chimaeras",
+    "Steenbras",
+    "Marlin",
+    "Marlin",
+    "Armourhead",
+    "Shark",
+    "Musselcracker",
+    "Wahoo",
+    "Warehou",
+    "Shark",
+    "Shark",
+    "Shark",
+    "Mackerel",
+    "Squids",
+    "Catfishes",
+    "Horse mackerel",
+    "Mullet",
+    "Mullet"
+)
+added_category <- c(
+    "Planktivore",
+    "Planktivore",
+    "Demersal",
+    "Demersal",
+    "Demersal",
+    "Benthic invertebrate",
+    "Pelagic",
+    "Planktivore",
+    "Demersal",
+    "Benthic Invertebrate",
+    "Demersal",
+    "Demersal",
+    "Pelagic",
+    "Pelagic",
+    "Demersal",
+    "Demersal",
+    "Demersal",
+    "Demersal",
+    "Demersal",
+    "Pelagic",
+    "Demersal",
+    "Demersal",
+    "Demersal",
+    "Pelagic invertebrate",
+    "Demersal",
+    "Demersal",
+    "Demersal",
+    "Demersal"
+)
+added_fao <- c("CHP", "WRR", "SLF", "PGA", "SOW", NA, "WHM", NA, "SOE", "CGE", "CHM", "RER", "MLS", "BLM", "EDR", "NTC", "CYM", "WAH", "BWA", "WSH", NA, "TIG", "LEC", NA, "GAT", NA, NA, NA)
+added_guild <- c(
+    "Planktivore",
+    "Planktivore",
+    "Demersal",
+    "Demersal",
+    "Demersal",
+    "Benthos carnivore/scavenge feeder",
+    "Migratory",
+    "Planktivore",
+    "Demersal",
+    "Benthos carnivore/scavenge feeder",
+    "Demersal",
+    "Demersal",
+    "Migratory",
+    "Migratory",
+    "Demersal",
+    "Demersal",
+    "Demersal",
+    "Demersal",
+    "Demersal",
+    "Demersal",
+    "Demersal",
+    "Demersal",
+    "Demersal",
+    "Zooplankton carnivore",
+    "Demersal",
+    "Demersal",
+    "Demersal",
+    "Demersal"
+)
+filler <- rep(NA, length(added_species_name))
+
+added_species <- data.frame(
+    Scientific.name = added_species_name,
+    Common.name = added_common_name,
+    Groupname = added_groupname,
+    Category = added_category,
+    Subcategory = filler,
+    Pricedata10 = filler,
+    STECFspecies10 = filler,
+    STECFname = filler,
+    IMR.code = filler,
+    FAO = added_fao,
+    X = filler,
+    Statistics.Iceland = filler,
+    Hagstova.frorya = filler,
+    Guild = added_guild
+)
+
+known_species <- rbindlist(list(known_species, added_species))
+
+# Manually move Seriola lalandi (Yellowtail) from Planktivore to demersal guild to align with Shannon et al. (2020) EwE classification.
+known_species[known_species$Scientific.name == "Seriola lalandi", c("Guild")] <- "Demersal"
+
+# Manually move Scombridae (Mackerels and Tunas) to Demersal as it is not specified whether the species is mackerels or tunas and mackerels are not migratory.
+known_species[known_species$Scientific.name == "Scombridae", c("Guild")] <- "Demersal"
+
+write.csv(known_species, "./Objects/updated_known_fish_guilds.csv")
