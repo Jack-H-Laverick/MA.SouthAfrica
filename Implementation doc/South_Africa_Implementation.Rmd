@@ -272,6 +272,12 @@ This relationship has been documented in the North Sea implementation of the tem
 
 # Fixed biological {.unnumbered}
 
+## Domain-specific guilds
+
+StrathE2E represents guilds including Planktivorous Fish, Demersal Fish, Migratory Fish, Carnivorous Zooplankton, Omnivorous Zooplankton, Carnivorous/Scavenge feeding benthos, Suspension/Deposit feeding benthos and Macrophytes.
+To parameterise the model implementation for the domain region, biological and fishing parameters should be informed by biological and fishing data from domain-specific species that are representative of these guilds in the domain.
+Species that were present in fishing data were matched to existing StrathE2E species-guild allocations at the genus level, or species level where possible, and species that were not already allocated to guilds were allocated based on their diet and movement patterns.
+
 ## Configuration parameters {.unnumbered}
 
 ### Assimilation efficiencies for each living guild in the model. {.unnumbered}
