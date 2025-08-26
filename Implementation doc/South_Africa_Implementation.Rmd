@@ -347,9 +347,11 @@ To implement this ecological process we set spawning for this guild to start in 
 This means that additional larvae are added to the water column in winter, and the recruitment of larvae to benthos occurs slowly over the entire year resulting in larvae present in the water column year round.
 
 ### Migratory fish event timing {.unnumbered}
-There are an estimated 14 migratory species in the migratory fish guild for the domain, with Yellowfin Tuna remaining in the domain region year-round (pers comms Shannon and Ortega-Cisneros (2025).), therefore we estimate the proportion of migratory fish domain-biomass that remains in the domain year round as 1/14. In addition Tunas and Swordfish have a general domain presence from November to March, thus we parameterise the Immigration of these species as starting in November (300 days since Jan 1), spanning for one month (330 days since Jan 1) and the emmigration of these species from the domain as starting in March (60 days since Jan 1), spanning for one month (90 days since Jan 1).
-We take the total ocean biomass of migratory fish to be equal to the value from the closest existing implementation (Saint Helena Island), with 5,214,177 tonnes wet weight. To estimate the proportion of this ocean biomass entering the model domain each year, we use the biomass estimate for Tuna and Swordfish from Shannon et al. (2020) as a proxy for migratory fish guild biomass in the domain.
 
+There are an estimated 14 migratory species in the migratory fish guild for the domain, with Yellowfin Tuna remaining in the domain region year-round (pers comms Shannon and Ortega-Cisneros (2025).), therefore we estimate the proportion of migratory fish domain-biomass that remains in the domain year round as 1/14.
+In addition Tunas and Swordfish have a general domain presence from November to March, thus we parameterise the Immigration of these species as starting in November (300 days since Jan 1), spanning for one month (330 days since Jan 1) and the emmigration of these species from the domain as starting in March (60 days since Jan 1), spanning for one month (90 days since Jan 1).
+We take the total ocean biomass of migratory fish to be equal to the value from the closest existing implementation (Saint Helena Island), with 5,214,177 tonnes wet weight.
+To estimate the proportion of this ocean biomass entering the model domain each year, we use the biomass estimate for Tuna and Swordfish from Shannon et al. (2020) as a proxy for migratory fish guild biomass in the domain.
 
 # Ecological drivers {.unnumbered}
 
@@ -643,7 +645,65 @@ Target data is used for optimisation in the fitting of parameters.
 ## Biological target data
 
 Biological target data for the region such as production measures, diet composition and Production/Biomass ratios were provided by Lynne Shannon and Kelly Ortega-Cisneros from [@shannon20].
-These data are derived from an Ecopath with Ecosim model of the Southern Benguela region.
+
+| StrathE2E Guild | EwE functional group |
+|----|----|
+| Suspended detritus | Detritus |
+| Macrophytes | Benthic producers |
+| Phytoplankton | Phytoplankton 1, Phytoplankton 2 |
+| Omnivorous zooplankton | Microzooplankton, Mesozooplankton, Macrozooplankton |
+| Carnivorous zooplankton | Gelatinous zooplankton, Chokka Squid |
+| Planktivorous fish | Anchovy recruits/spawners, Sardine juveniles/adults, Redeye, Other small pelagics, juvenile Horse Mackerel, Chub Mackerel, Lanternfish, Lightfish |
+| Migratory fish | Tuna and swordfish |
+| Demersal fish | adult Horse Mackerel, Large Sparids, Medium Sparids, Sciaenids, Yellowtail Kingfish, other linefish, small Merluccius spp., large Merluccius spp., pelagic feeding demersal fish, benthic feeding demersal fish, Agulhas Sole, pelagic feeding Chondrichthyans, benthic feeding Chondrichthyans, Apex Chondrichthyans, Mullet, Snoek |
+| Pinnipeds | Seals |
+| Cetaceans | Cetaceans |
+| Birds | African Penguin, Cape Gannet, Cape Cormorant, other Seabirds |
+| Suspension/deposit feeding benthos | Macrobenthos |
+| Carnivorous/scavenge feeding benthos | West Coast Rock Lobster, South Coast Rock Lobster, Meiobenthos |
+
+: Functional group - StrathE2E guild allocations used to match species groups from \[\@shannon20\] with guilds in StrathE2E for the purpose of calculating biological target data values.
+
+These data are derived from an Ecopath with Ecosim model of the Southern Benguela region according to the following methodologies:
+
+### Annual total primary production
+
+Estimated from [@shannon20] using observations from [@brown91] and revised to account for particulate dissolved organic carbon.
+
+### Gross guild production and P/B ratios
+
+Guild biomass were estimated from biomass and abundance estimates from acoustic and demersal surveys from the Department of Environment, Forestry and Fisheries for planktivorous and demersal fish and chokka squid.
+Biomass for the groups allocated to the omnivorous/carnivorous zooplankton and benthos guilds were estimated during balancing of the revised Southern Benguela Ecopath model [@shannon20].
+
+Production values were derived from observations (e.g., [@painting92]; [@hutchings91]) and other modelling studies (e.g., [@jarre-teichman98]) for both zooplankton groups.
+For benthos groups, production estimates were derived from other modelling studies and observations ([@berry80] for West Coast Rock Lobster).
+Similarly, for planktivorous and demersal groups, production estimates were derived from observational and modelling studies.
+Please see Appendix A in Shannon et al. [-@shannon03] and Supplementary Material from Shannon et al. [-@shannon20] for a complete list of references and assumptions associated with these estimates.
+
+### Net production and P/B ratios
+
+Estimated using biomass estimates derived from Shannon et al. [-@shannon20] for cetaceans, and from observations for seals and seabirds (e.g. [@kirkman07]; [@crawford91]; [@crawford07]).
+Production estimates from Crawford et al. [-@crawford91], Shannon et al. 2003; 2020.
+
+### Annual consumption rates
+
+Annual consumption rates were estimated for consumption of planktivorous fish by fish, demersal fish by fish, omnivorous zooplankton by fish and fish larvae, omnivorous zooplankton by carnivorus zooplankton, benthos by fish, birds, pinnipeds and cetaceans.
+
+These were generated using consumption estimates from observational and modelling studies as well as expert knowledge.
+See Appendix A in Shannon et al. [-@shannon03] and Supplementary Material from Shannon et al. [-@shannon20] for a detailed of references and assumptions associated with these estimates.
+
+### Diet proportions
+
+Diet proportion values were estimated for proportion of planktivorous fish in diet of birds, demersal fish in diet of birds, planktivorous fish in diet of pinnipeds, demersal fish in diet of pinnipeds, planktivorous fish in diet of cetaceans and demersal fish in diet of cetaceans.
+
+Diet proportions were mostly generated using observational studies for the southern Benguela.
+A comprehensive list of dietary data for the southern Benguela model can be found in Table A.10 of Shannon et al. [-@shannon03].
+Diet data sources were revised in Shannon et al. [-@shannon20] to account for the higher taxonomic resolution of several functional groups compared to previous versions of the model.
+See section 4 of the supplementary material of Shannon et al. [-@shannon20] for a list of updated references.
+
+### Fisheries data
+
+Annual fisheries data such as landings of planktivorous fish, demersal fish, migratory fish, benthos, carnivorous zooplankton and macrophytes and bycatch data for birds, seals and cetaceans were estimated from Seas Around Us data from 2010 to 2019.
 
 ## Physical target data
 
