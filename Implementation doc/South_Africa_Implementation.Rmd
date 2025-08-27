@@ -344,7 +344,7 @@ There is no available information on recruitment timings for this guild, thus we
 The species with the highest contribution to Carnivorous / Scavenge feeding benthos fisheries in the region is the West Coast Rock Lobster.
 From personal communication with Lynne Shannon and Kelly Ortega-Cisneros, West Coast Rock Lobster spawn during October and November and larvae are present in the water column across most of the year.
 To implement this ecological process we set spawning for this guild to start in October (270 days since Jan 1) spanning for 60 days, with a guild recruitment start day of 1 (days since Jan 1), and a duration of 360 days.
-This means that additional larvae are added to the water column in winter, and the recruitment of larvae to benthos occurs slowly over the entire year resulting in larvae present in the water column year round.
+This means that additional larvae are added to the water column in Summer, and the recruitment of larvae to benthos occurs slowly over the entire year resulting in larvae present in the water column year round.
 
 ### Migratory fish event timing {.unnumbered}
 
@@ -517,7 +517,7 @@ We assume that recreational fishing trips last 5h and convert the activity to se
 
 ### Small scale lines
 
-The number of small scale fishers operating in South Africa is obtained from \[dffe23\], with 85% of fishers targetting linefish (small scale lines).
+The number of small scale fishers operating in South Africa is obtained from [@dffe23], with 85% of fishers targetting linefish (small scale lines).
 We assume that small scale line fishers fish 5 days per week, removing a month of the year due to inclement conditions (230 days/year).
 We assume that fishers spend 12h per day fishing.
 Activity is then converted to seconds and scaled by the proportion of linefishing effort occurring within the model domain area.
@@ -528,8 +528,6 @@ The number of subsistence fishers fishing in the model domain is estimated in [@
 Subsistence fishing is estimated to occur 219 days per year [@ermgassen20].
 Fisher testimony conveys fishing starting from 4am [@ntimbane], we assume that the average fishing duration is 12h/day.
 Activity is then converted to seconds.
-
--   `West Coast Rock Lobster traps` : Annual activity data (number of trips) is available for the 2016-2019 period from [@Eggers21]. Only the offshore sector trips are included in calculations as this geartype contains the commercial offshore trapping fleet. Other gears, including small scale and subsistence are assumed to capture the nearshore West Coast Rock Lobster fishery, which is distinct from the offshore fishery [@dffe23].
 
 ## Spatial proportional distribution of activity by each gear {.unnumbered}
 
@@ -545,8 +543,10 @@ These layers are not considered to be accurrate, but rather a best guess at the 
 It is acknowledged that mapping of small scale and subsistence fishing is preliminary and, "according to many stakeholders incomplete" (pers comms \[\@-fairweather25\]).
 Data were obtained from [@sanbi18] and [@holness18].
 
-The sources and processing for each gear type are described below: - `midwater trawl` : Midwater trawl spatial pressure data were obtained from SANBI [@sanbi18].
-These data are derived from values of hours of trawling.
+The sources and processing for each gear type are described below: 
+
+-   `midwater trawl` : Midwater trawl spatial pressure data were obtained from SANBI [@sanbi18].
+    These data are derived from values of hours of trawling.
 
 -   `nets including small scale` : Gillnet and Beach-seine spatial pressure data from SANBI [@sanbi18] were combined.
     These data are derived from numbers of fishing rights allocated / km\^2.
