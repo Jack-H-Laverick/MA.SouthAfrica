@@ -41,13 +41,13 @@ pagebreak <- function() {
 }
 
 source("../R scripts/@_Region file.R")
-Period <- "2010-2019"
+Period <- "2010-2019-CNRM-ssp126"
 
 table_nums <- captioner::captioner(prefix = "Table ")
 
 table.ref <- function(x) stringr::str_extract(table_nums(x), "[^:]*")
 
-model <- StrathE2E2::e2e_read(implementation, Period, models.path="./Files") # Load implementation
+model <- StrathE2E2::e2e_read(implementation, Period, models.path="./StrathE2E/") # Load implementation
 
 Area <- read.csv(str_glue("Files/{implementation}/{Period}/Param/event_timing_{toupper(implementation)}_{Period}.csv")) %>% 
   filter(str_detect(Description, "km2")) %>% 
@@ -82,6 +82,15 @@ These are detailed in the ecological drivers and fishing fleet sections.
 
 # Model Domain {.unnumbered}
 
+The model domain for the South Africa case study - Southern Benguela extends along the western and 
+southern coastlines of South Africa from the South Africa - Namibia border in the north-west 
+to the Agulhas Bank in the south-east. The eastern extent of the model domain was chosen to encompass 
+the region where the Agulhas current terminates and the Southern Benguela current begins at the 
+Agulhas Bank, marking a distinct change in environmental conditions [@lutjeharms2006]. This 
+region is an important spawning ground for many species that dispers north-westward using the 
+Southern Bengeula current. The Southern Benguela and Agulhas Bank region also differs substantially 
+in fishing activity compared to the eastern coast under the Agulhas current [@globalfishingwatch2025].
+
 The model splits the domain into three zones, inshore/shallow, offshore/shallow, and offshore/deep (Figure \@ref(fig:spatialschematic)).
 The inshore/shallow zone covers waters shallower than `r SDepth` m .
 The offshore zone covers the remaining area of the model domain (Figure \@ref(fig:habitats)).
@@ -89,6 +98,10 @@ The offshore zone is divided further into a shallow and deep layer.
 The shallow layer represents water from the surface to `r SDepth` m depth, and shares a boundary with the inshore shallow zone.
 The offshore/deep zone covers the same area as the offshore/shallow zone, but represents water between `r SDepth` m and `r DDepth` m deep.
 There is a second internal boundary between the two offshore zones.
+
+The outer boundary of the offshore zone, and the model domain at `r DDepth`m deep represents 
+a boundary between distinct fishing activity levels that occurs across the continental shelf 
+gradient [@globalfishingwatch2025].
 
 ![(#fig:spatialschematic) The spatial structure of StrathE2E; Ocean volumes and seafloor habitats. StrathE2E is built around a simplified spatial structure which represents shelf seas. These spatial units are connected to each other and to boundaries as shown to the right. The volumes connected to each spatial component are highlighted in blue.](img/schematic%20overhang.svg)
 
@@ -543,7 +556,7 @@ These layers are not considered to be accurrate, but rather a best guess at the 
 It is acknowledged that mapping of small scale and subsistence fishing is preliminary and, "according to many stakeholders incomplete" (pers comms \[\@-fairweather25\]).
 Data were obtained from [@sanbi18] and [@holness18].
 
-The sources and processing for each gear type are described below: 
+The sources and processing for each gear type are described below:
 
 -   `midwater trawl` : Midwater trawl spatial pressure data were obtained from SANBI [@sanbi18].
     These data are derived from values of hours of trawling.
@@ -647,7 +660,7 @@ Target data is used for optimisation in the fitting of parameters.
 Biological target data for the region such as production measures, diet composition and Production/Biomass ratios were provided by Lynne Shannon and Kelly Ortega-Cisneros from [@shannon20].
 
 | StrathE2E Guild | EwE functional group |
-|----|----|
+|------------------------------------|------------------------------------|
 | Suspended detritus | Detritus |
 | Macrophytes | Benthic producers |
 | Phytoplankton | Phytoplankton 1, Phytoplankton 2 |
