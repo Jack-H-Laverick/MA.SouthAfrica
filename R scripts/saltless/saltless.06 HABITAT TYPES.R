@@ -81,12 +81,39 @@ sediment_minus_rock <- st_erase(sub_sediment, sub_rocks)
 
 # Combine the sediment minus rock areas and rock polygons
 habitats <- rbind(sediment_minus_rock, sub_rocks) %>%
+    # st_transform(crs = crs) %>% # Reproject to 4326 to be consistent with other files
     rename(Habitat = "habitat_class") %>%
     st_make_valid()
 alpha_values <- c("Inshore" = 0.2, "Offshore" = 1.0)
 ggplot() +
     geom_sf(data = habitats, aes(fill = Habitat, alpha = Shore)) +
     scale_alpha_manual(values = alpha_values)
+
+#### Cleaning up polygons that have many pixel holes due to map resultion quality
+holes <- c("sandInshore", "mudInshore", "sandOffshore", "mudOffshore")
+
+for (type in holes) {
+    habitat <- filter(habitats, paste0(Habitat, Shore) == type)
+    plot(habitat)
+
+    bbp <- st_as_sf(st_as_sfc(st_bbox(habitat))) # Get an sf object of the bounding box
+
+    test <- st_difference(bbp, st_make_valid(habitat)) %>% # cut the negative of the shape
+        st_cast("POLYGON") %>% # Access each sub-shape separately
+        mutate(area = as.numeric(st_area(st_make_valid(.)))) %>% # Calculate their size
+        filter(area > 100000000) %>% # Now remove all the tiny holes
+        st_union() # And join all the shapes together again
+
+    plot(test) # We now only have the "real" holes in the habitat map
+    plot(habitat)
+
+    final <- st_difference(bbp, test) %>% # Cut the negative out of the bounding box to get the shape back
+        rename(geometry = "x") %>%
+        st_as_sf(sf_column_name = "geometry") %>%
+        mutate(Habitat = habitat$Habitat, Shore = habitat$Shore)
+
+    habitats[paste0(habitats$Habitat, habitats$Shore) == type, ] <- final[, c("Habitat", "Shore", "geometry")]
+}
 
 #### Calculate proportion of model zones in each habitat - before converting reprojecting ####
 proportions <- habitats %>%
@@ -97,6 +124,7 @@ proportions <- habitats %>%
 
 habitats <- st_transform(habitats, crs = crs)
 saveRDS(habitats, "./Objects/Habitats.rds")
+st_write(habitats, "./Objects/Habitats.gpkg")
 saveRDS(proportions, "./Objects/Sediment area proportions.rds")
 
 ggplot(proportions) +
