@@ -732,6 +732,33 @@ The volumes of the water layers were calculated as the polygon area multiplied b
 
 ### Sediment chemistry
 
+# Model fitting {.unnumbered}
+## CNRM-SSP3-7.0
+
+To begin fitting the ecology component of the StrathE2E model to the target data, we first disabled guild landing and bycatch data and launched a round of simulated annealing (e2e_optimise_eco()), with the target data including primary and guild production estimates, as well as P:B ratios and nitrate concentrations from World Ocean Atlas. This round of fitting did not use the landings/bycatch or dietary consumption or composition target data.
+After manual tweaking to benthos guild harvesting and uptake parameters, a fit of 0.3 likelihood was reached.
+To fit the fishing component of the model, the updated model was launched with e2e_optimise_fishing().
+After this process, model likelihood reached 0.59, however guild yield curves for Planktivorous fish and Demersal fish suggested these guilds were being underfished with F/Fmsy \<\< 1.
+
+Fisheries data from Sea Around Us indicated that 2010-2019 landings were around 3.6 mMNpergWW per year, and indications of F/Fmsy from the Department of Forestry, Fisheries and the Environment [@dffe2012; @dffe2014; @dffe2016; @dffe2020] suggested that key Planktivorous fish species were being fished at an optimal level (F/Fmsy ~ 1) during this period.
+Additionally, Planktivorous fish are known to be highly variable across time, with a large spike in biomass from 1995-2008 [@coetzee2022]. As a result, we hypothesised that Planktivorous Fish Production and P:B parameter estimates from EwE [@shannon2020] may not suitably represent the 2010-2019 time period that our model is based on as this EwE model was parameterised for the 1975-2015 time period, leading to Production and P:B ratios that were not consistent with Planktivorous Fish F/Fmsy and landings estimates for the 2010-2019 period.
+Under this assumption, Planktivorous Fish annual Production and P:B ratio estimates in the target data were turned off for subsequent fitting rounds.
+
+To ensure that model fisheries landings remain close to the estimated 3.6 mMNpergWW and F/Fmsy remains close to 1 for Planktivorous Fish we performed several rounds of parameter searches based on the updated model, adjusting maxmimum nitrogen uptake and density dependent mortality rates for Planktivorous Fish, as well as adjusting Harvest Ratio scaling parameters.
+Once suitable Planktivorous Fish landings and yield curve were suitable according to the identified targets, parameters were tuned for Demersal Fish to acheive a F/Fmsy around 1.
+As with Demersal Fish event timing parameterisation, we assume Cape Hakes are a representative species for the guild, and acknowledge that Demersal Fish likely occupy a range of F/Fmsy levels. For example, DFFE @dffe2012;@dffe2014;dffe2016;dffe2020 assess many shark species to be fished at F > Fmsy, while Agulhas Sole are assessed to have F < Fmsy.
+After tuning Demersal Fish parameters, maximum uptake rates for birds, seals and cetaceans were increased by 7, 5 and 3x respectively to prevent guild extinction.
+Finally, a round of simulated annealing was used to readjust ecological parameters, with standard deviations set to 10% of mean measures for landings target values, and Planktivorous Fish Production and P:B ratio target data turned off.
+
+| StrathE2E Guild | Species | 2012 | 2014 | 2016 | 2020 |
+|------------------------------------|------------------------------------|
+| Planktivorous Fish | Sardine | F/Fmsy ~ 1 | F/Fmsy ~ 1 | F/Fmsy ~ 1 | F/Fmsy ~ 1 |
+| Planktivorous Fish | Herring | F/Fmsy < 1 | F/Fmsy < 1 | F/Fmsy < 1 | F/Fmsy < 1 |
+| Planktivorous Fish | Anchovy | F/Fmsy ~ 1 | F/Fmsy < 1 | F/Fmsy < 1 | F/Fmsy ~ 1 |
+| Demersal Fish | Cape Hakes | F/Fmsy ~ 1 | F/Fmsy ~ 1 | F/Fmsy ~ 1 | F/Fmsy ~ 1 |
+
+: Representative species for Planktivorous and Demersal Fish and their indicative F/Fmsy levels [@dffe2012; @dffe2014; dffe2016; dffe2020].
+
 # End {.unnumbered}
 
 ## Acknowledgements {.unnumbered}
