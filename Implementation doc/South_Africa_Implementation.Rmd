@@ -733,8 +733,9 @@ The volumes of the water layers were calculated as the polygon area multiplied b
 ### Sediment chemistry
 
 # Model fitting {.unnumbered}
-## CNRM-SSP3-7.0
+## CNRM
 
+First the CNRM-SSP3-7.0 variant is used for model fitting.
 To begin fitting the ecology component of the StrathE2E model to the target data, we first disabled guild landing and bycatch data and launched a round of simulated annealing (e2e_optimise_eco()), with the target data including primary and guild production estimates, as well as P:B ratios and nitrate concentrations from World Ocean Atlas. This round of fitting did not use the landings/bycatch or dietary consumption or composition target data.
 After manual tweaking to benthos guild harvesting and uptake parameters, a fit of 0.3 likelihood was reached.
 To fit the fishing component of the model, the updated model was launched with e2e_optimise_fishing().
@@ -748,7 +749,8 @@ To ensure that model fisheries landings remain close to the estimated 3.6 mMNper
 Once suitable Planktivorous Fish landings and yield curve were suitable according to the identified targets, parameters were tuned for Demersal Fish to acheive a F/Fmsy around 1.
 As with Demersal Fish event timing parameterisation, we assume Cape Hakes are a representative species for the guild, and acknowledge that Demersal Fish likely occupy a range of F/Fmsy levels. For example, DFFE @dffe2012;@dffe2014;dffe2016;dffe2020 assess many shark species to be fished at F > Fmsy, while Agulhas Sole are assessed to have F < Fmsy.
 After tuning Demersal Fish parameters, maximum uptake rates for birds, seals and cetaceans were increased by 7, 5 and 3x respectively to prevent guild extinction.
-Finally, a round of simulated annealing was used to readjust ecological parameters, with standard deviations set to 10% of mean measures for landings target values, and Planktivorous Fish Production and P:B ratio target data turned off.
+A round of simulated annealing was used to readjust ecological parameters, with standard deviations set to 10% of mean measures for landings target values, and Planktivorous Fish Production and P:B ratio target data turned off.
+Finally, an additional round of simulated annealing was used to confirm that model likelihood would not increase beyond 0.15.
 
 | StrathE2E Guild | Species | 2012 | 2014 | 2016 | 2020 |
 |------------------------------------|------------------------------------|
@@ -758,6 +760,11 @@ Finally, a round of simulated annealing was used to readjust ecological paramete
 | Demersal Fish | Cape Hakes | F/Fmsy ~ 1 | F/Fmsy ~ 1 | F/Fmsy ~ 1 | F/Fmsy ~ 1 |
 
 : Representative species for Planktivorous and Demersal Fish and their indicative F/Fmsy levels [@dffe2012; @dffe2014; dffe2016; dffe2020].
+
+## GFDL
+
+After CNRM fitting, the GFDL-SSP3-7.0 variant is used for model fitting. 
+The initial conditions and parameters from final fitting of CNRM were used to launch fitting for the GFDL model.
 
 # End {.unnumbered}
 
