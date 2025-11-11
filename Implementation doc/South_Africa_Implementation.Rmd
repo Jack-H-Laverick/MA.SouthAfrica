@@ -750,7 +750,7 @@ Once suitable Planktivorous Fish landings and yield curve were suitable accordin
 As with Demersal Fish event timing parameterisation, we assume Cape Hakes are a representative species for the guild, and acknowledge that Demersal Fish likely occupy a range of F/Fmsy levels. For example, DFFE @dffe2012;@dffe2014;dffe2016;dffe2020 assess many shark species to be fished at F > Fmsy, while Agulhas Sole are assessed to have F < Fmsy.
 After tuning Demersal Fish parameters, maximum uptake rates for birds, seals and cetaceans were increased by 7, 5 and 3x respectively to prevent guild extinction.
 A round of simulated annealing was used to readjust ecological parameters, with standard deviations set to 10% of mean measures for landings target values, and Planktivorous Fish Production and P:B ratio target data turned off.
-Finally, an additional round of simulated annealing was used to confirm that model likelihood would not increase beyond 0.15.
+Finally, an additional round of simulated annealing was used to confirm that model likelihood would not increase beyond 0.15. The resulting model underrepresented Carnivorous/Scavenging Benthos landings, so an increase of the HR-scale factor of 150x was applied, increasing model likelihood to 0.5.
 
 | StrathE2E Guild | Species | 2012 | 2014 | 2016 | 2020 |
 |------------------------------------|------------------------------------|
