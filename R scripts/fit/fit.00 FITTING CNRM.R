@@ -14,6 +14,8 @@ model <- e2e_read(implementation, str_glue("2010-2015-CNRM-ssp370"), models.path
 
 results <- e2e_run(model,nyears = 50)                                           # Check the model runs
 
+e2e_plot_ts(model, results)
+
 #### Initial Ecology fit ####
 
 ## Deactivate fishing related target data to first just fit the model to the ecology.
@@ -38,7 +40,6 @@ annual_targets <- read.csv(str_glue("./StrathE2E/{implementation}/2010-2015-CNRM
 
 write.csv(annual_targets, str_glue("./StrathE2E/{implementation}/2010-2015-CNRM-ssp370/Target/annual_observed_{toupper(implementation)}_2010-2019.csv"), row.names = FALSE)
 
-
 ## Are the patterns in the drivers the same as the target data? If the patterns are way off they can't be used and need deactivating
 
 # Satellite chlorophyll vs phytoplankton drivers
@@ -50,8 +51,8 @@ write.csv(annual_targets, str_glue("./StrathE2E/{implementation}/2010-2015-CNRM-
 
 ## Launch ecology fitting process
 
-fitting_data <- e2e_optimize_eco(model, nyears=50, n_iter=500, start_temperature=1,
-                                     csv.output=TRUE)
+fitting_data <- e2e_optimize_eco(model, nyears=50, n_iter=2000, start_temperature=1,
+                                     csv.output=TRUE, toppredlock = TRUE, cooling = 1)
 
 ## Keep launching fitting processes until stabilised
 
@@ -70,9 +71,19 @@ write.csv(Setup_file,
 model <- e2e_read(implementation, str_glue("2010-2015-CNRM-ssp370"), models.path = "StrathE2E/", results.path = "StrathE2E/Results/",
                   model.ident = stringr::str_glue("2010-2015-CNRM-ssp370-fitting-{round}")) # reload model to update ident
 
+#Inspect
+
+results <- e2e_run(model,nyears = 50)                                           # Check the model runs
+
+e2e_plot_ts(model, results)
+
+e2e_compare_obs(selection = "ANNUAL", model = model, results = results)
+
+# fit again
+
 tic()
 fitting_data <- e2e_optimize_eco(model, nyears=50, n_iter=2000, start_temperature=1,   # Go again with the fitting
-                                 csv.output=TRUE)
+                                 csv.output=TRUE, toppredlock = TRUE, cooling = 1)    # Cooling of one means we don't change the rate of exploration
 toc()
 
 # 24.5 hrs for 2000 iterations
@@ -80,7 +91,15 @@ toc()
 ## If another round is needed, increment round +1 and rerun the section above.
 ## Once ecology fit has stabilised move onto fishing fit
 
-## Even with no fishing the guilds go to extinction. I'm going to try and refit the ecology with HRs set to 0.
+## Even with no fishing the guilds go to extinction. 
+## For round 5 I multiplied the CZ gross production by 10 after going back to Lynn and Kelly and increased the PB ratio to 30.
+## and I released top predators as their P/B ratios were very different from the targets.
+## round 6 I increased the SD of net primary production by 10x to see if we can get some bottom up increases in plankton.
+## round 7 I ... cached and restarted
+## round 1 I added chlorophyll into the annual target data, and started from the Senegal model instead of Celtic Sea.
+## round 2 just went again as it took a long time to get off 0.
+## round 3 just keep going, similar issues with low biomasses beyond omnivorous zooplankton.
+## round 4, update package so it actually fits to Chl?
 
 #### Initial fishing fit ####
 
@@ -99,6 +118,10 @@ HR_check <- e2e_run(model,nyears = 50)                                          
 
 Sim_landings <- HR_check[["total.annual.catch"]][["inshore_annual_group_land_disc"]][50,] +
   HR_check[["total.annual.catch"]][["inshore_annual_group_land_disc"]][50,]
+
+e2e_plot_ts(model, HR_check)
+
+e2e_compare_obs(selection = "ANNUAL", model = model, results = HR_check)
 
 #annual_targets[which(annual_targets$Name == "Obs_Pland_livewt"), "Use1_0"]
 
@@ -126,8 +149,6 @@ Group == "Macrophytes" &
   annual_targets[which(annual_targets$Name == "Obs_Kland_livewt"), "Use1_0"] == 1 ~ annual_targets[which(annual_targets$Name == "Obs_Kland_livewt"), "Annual_measure"] / Sim_landings$KPland,
 T ~ 1)) %>% 
   mutate(Harvest_ratio_multiplier = ifelse(is.finite(Harvest_ratio_multiplier), Harvest_ratio_multiplier, 1)) # Overwrite any infinities caused by landings of 0 in the simulations
-
-e2e_plot_ts(model, HR_check)
 
 # It looks like overfishing has driven the guilds to extinction. If we are to the right of the yield curve the above guesses
 # for multipliers wont work (low landings asks for stronger fihsing, but that just drives overexploitation further).
