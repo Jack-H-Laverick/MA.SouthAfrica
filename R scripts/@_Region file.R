@@ -19,7 +19,6 @@ pre <- list(scale = 1, width = 12, height = 10, units = "cm", dpi = 500) # The s
 
 SDepth <- 50 # Shallow deep boundary
 DDepth <- 800 # Maximum depth
-Distance <- 20 # Minimum distance from shore buffer for the inshore zone (pulled by the implementation doc)
 
 #### bathymetry.5 MODEL DOMAIN ####
 
@@ -32,7 +31,7 @@ shape <- function(matrix, label = "DUMMY") {
     st_crs(shape) <- st_crs(4326)
     shape <- st_transform(shape, crs = crs)
     return(shape)
-} # Convert a matrix of lat-lons to an sf polygon
+} # Convert a matrix of lat-lons to an sf polygonlat-lons to an sf polygon
 
 Region_mask <- matrix(
     c(
