@@ -1,5 +1,5 @@
 ---
-title: "The southern Benguela Current\n implementation"
+title: "The Southern Benguela Current\n implementation"
 subtitle: "StrathE2E2"
 author: "Jack H Laverick<br> Benjamin Grier<br> Kelly Ortega Cisneros<br> Lynne Shannon<br> Douglas C Spiers<br> Michael R Heath"
 date: "`r format(Sys.time(), '%d %b %Y')`"
