@@ -2,23 +2,47 @@ library(StrathE2E2)
 library(ggplot2)
 library(tidyverse)
 
-# Load starting model and check results
-model <- e2e_read(
-    model.name = "South_Africa_MA",
-    model.variant = "2010-2015-CNRM-ssp370",
-    models.path = "./StrathE2E/",
-    results.path = "StrathE2E/Results/", # edit for your own results folder
-    model.ident = "Test"
+# perform manual changes to model uptake parameter and target data files
+# These changes were originally performed by Michael Heath in a manual process
+# following fitting-1_2025_10_09 round of ecology model fitting
+
+# uptake rate file
+uptake_rates <- read.csv("./StrathE2E/South_Africa_MA/2010-2015-CNRM-ssp370/Param/fitted_uptake_mort_rates-2010-2015-CNRM-ssp370-fitting-1_2025_10_09.csv")
+uptake_rates[uptake_rates$consumer == "benthslar", "Numax"] <- 0.3
+uptake_rates[uptake_rates$consumer == "bird", "Numax"] <- 0.8
+uptake_rates[uptake_rates$consumer == "bird", "ddmort"] <- 0.035
+write.csv(uptake_rates, "./StrathE2E/South_Africa_MA/2010-2015-CNRM-ssp370/Param/fitted_uptake_mort_rates-2010-2015-CNRM-ssp370-fitting-1_2025_10_09 - editMH.csv", row.names = FALSE)
+
+# target data file
+target_data <- read.csv("./StrathE2E/South_Africa_MA/2010-2015-CNRM-ssp370/Target/annual_observed_SOUTH_AFRICA_MA_prod_only.csv")
+target_data[c(8, 9, 26, 27, 30, 31, 43, 44), "Annual_measure"] <- c(56.13750, 1.7449, 0.319, 0.396, 0.46, 0.316, 1.696, 0.937) # Manual adjustments to benthos guild production target values
+
+# turn on fishing target data again (following disablement in initial fitting)
+fishing_targets <- c(
+  "Proportion_discards_in_diet_of_birds",
+  "Annual_planktivorous_fish_landings_(live_weight)",
+  "Annual_demersal_fish_landings_(live_weight)",
+  "Annual_migratory_fish_landings_(live_weight)",
+  "Annual_susp/dep_benthos_landings_(live_weight)",
+  "Annual_carn/scav_benthos_landings_(live_weight)",
+  "Annual_carn_zooplankton_landings_(live_weight)",
+  "Annual_macrophyte_landings_(live_weight)",
+  "Proportion_of_demersal_fish_catch_discarded",
+  "Annual_bycatch_of_birds",
+  "Annual_bycatch_of_pinnipeds",
+  "Annual_bycatch_of_cetaceans",
+  "Obs_cetacean_landings_by_whale_hunters"
 )
+target_data <- target_data %>% mutate(Use1_0 = if_else(Description %in% fishing_targets, 1, Use1_0))
+write.csv(target_data, "./StrathE2E/South_Africa_MA/2010-2015-CNRM-ssp370/Target/annual_observed_SOUTH_AFRICA_MA_prod_landings_revMH.csv", row.names = FALSE)
 
-results <- e2e_run(model, nyear = 30, csv.output = FALSE)
+setup_file <- read.csv("./StrathE2E/South_Africa_MA/2010-2015-CNRM-ssp370/MODEL_SETUP.csv")
+setup_file[9, 1] <- "fitted_uptake_mort_rates-2010-2015-CNRM-ssp370-fitting-1_2025_10_09 - editMH.csv"
+setup_file[23, 1] <- "annual_observed_SOUTH_AFRICA_MA_prod_landings_refMH.csv"
+write.csv(setup_file, "./StrathE2E/South_Africa_MA/2010-2015-CNRM-ssp370/MODEL_SETUP.csv", row.names = FALSE)
 
-e2e_plot_ts(model, results)
-e2e_compare_obs(selection = "ANNUAL", model, results = results)
-results$final.year.outputs$opt_results[, c(1, 3, 4, 5, 6)]
-results$final.year.outputs$annual_obj # should return 0.3003011
 
-# Fit ecology with primarily uptake parameters:
+# This round of fitting is used to fit the ecology model with primarily uptake parameters:
 cv_eco <- read.csv("./StrathE2E/South_Africa_MA/2010-2015-CNRM-ssp370/Param/control/optimize_ecology.csv")
 cv_eco[str_detect(cv_eco[, 2], "maximum_uptake"), "Value"] <- 0.005 # Set high CV control for max uptake params
 cv_eco[!str_detect(cv_eco[, 2], "maximum_uptake"), "Value"] <- 0.0001 # Set low CV control for other param groups
@@ -62,6 +86,7 @@ fitting_data <- e2e_optimize_hr(model,
     nyears = 50, n_iter = 2000, # Go again with the fitting
     csv.output = TRUE
 )
+
 
 # Exploring fitted yield curves
 setup_file <- read.csv("./StrathE2E/South_Africa_MA/2010-2015-CNRM-ssp370/MODEL_SETUP.csv")

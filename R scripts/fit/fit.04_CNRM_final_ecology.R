@@ -67,19 +67,3 @@ setup_file[8, 1] <- "fitted_preference_matrix-eco-fitting_2025_10_31.csv"
 setup_file[9, 1] <- "fitted_uptake_mort_rates-eco-fitting_2025_10_31.csv"
 setup_file[10, 1] <- "fitted_microbiology_others-eco-fitting_2025_10_31.csv"
 write.csv(setup_file, "./StrathE2E/South_Africa_MA/2010-2015-CNRM-ssp370/MODEL_SETUP.csv", row.names = FALSE)
-
-model <- e2e_read(
-  model.name = "South_Africa_MA",
-  model.variant = "2010-2015-CNRM-ssp370",
-  models.path = "./StrathE2E/",
-  results.path = "StrathE2E/Results/", # edit for your own results folder
-  model.ident = "2025_11_03"
-)
-results <- e2e_run(model, nyears = 100, csv.output = FALSE)
-e2e_plot_ts(model, results)
-e2e_compare_obs(model = model, results = results, selection = "ANNUAL")
-
-pycurve <- e2e_run_ycurve(model, selection = "PLANKTIV")
-e2e_plot_ycurve(model = model, results = pycurve, selection = "PLANKTIV")
-dycurve <- e2e_run_ycurve(model, selection = "DEMERSAL")
-e2e_plot_ycurve(model = model, results = dycurve, selection = "DEMERSAL")
