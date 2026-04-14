@@ -96,7 +96,7 @@ There is a second internal boundary between the two offshore zones.
 The outer boundary of the offshore zone, and the model domain at `r DDepth`m deep represents a boundary between distinct fishing activity levels that occurs across the continental shelf gradient [@globalfishingwatch2025].
 In consultation with local collaborators, we imposed additional boundaries to limit the extent of the domain between 14.45E and 22.5E, and 28.6S and 36.98S.
 
-![(#fig:spatialschematic) The spatial structure of StrathE2E; Ocean volumes and seafloor habitats. StrathE2E is built around a simplified spatial structure which represents shelf seas. These spatial units are connected to each other and to boundaries as shown to the right. The volumes connected to each spatial component are highlighted in blue.](img/schematic%20overhang.svg)
+![(#fig:spatialschematic) The spatial structure of StrathE2E; Ocean volumes and seafloor habitats. StrathE2E is built around a simplified spatial structure which represents shelf seas. These spatial units are connected to each other and to boundaries as shown to the right. The volumes connected to each spatial component are highlighted in blue.](img/schematic%20overhang.png)
 
 The seafloor of the model domain is represented by 5 habitat types.
 There are three sediment classes for the inshore zone – fine (muddy, 1), medium (sandy, 2) and coarse (gravel, 3).
@@ -120,8 +120,6 @@ As the sediment map is in scanned-pdf format, this was digitised, and combined w
 # Fixed physical parameterisation {.unnumbered}
 
 ## Background {.unnumbered}
-
-#### Water column inshore/shallow and offshore/deep zone area proportions and layer thicknesses; seabed habitat area proportions and sediment properties: {.unnumbered}
 
 #### Parameters for relationship between median grain size, sediment porosity and permeability. Permeability is used as the basis for estimating hydraulic conductivity which is a parameter in the representation of sediment processes in the model: {.unnumbered}
 
@@ -158,7 +156,7 @@ Derivation of the parameters is described in the following sub-sections.
 ```{r area_proportions_cap}
 
 tab_area_proportions_cap <- table_nums(name = "tab_area_proportions", 
-    caption = stringr::str_glue("Area-proportions of the inshore and offshore zones and the thicknesses of the                                        water column layers. The sea surface area of the model domain is an estimated                                         {Area} km^2^."))
+    caption = stringr::str_glue("Area-proportions of the inshore and offshore zones and the thicknesses of the                                        water column layers. The sea surface area of the model domain is an estimated                                         {round(Area)} km^2^."))
 ```
 
 `r table_nums("tab_area_proportions")`
@@ -187,7 +185,7 @@ The model area proportion was calculated as the proportion of the total domain a
 
 ```{r habitat_proportions_cap}
 tab_habitat_proportions_cap <- table_nums(name = "tab_habitat_proportions", 
-    caption = stringr::str_glue("Area proportions and other characteristics of the 8 seabed habitat classes defined in the model by depth, rock or sediment type. The sea surface area of the model domain is an estimated {Area} km^2^. Grain size is the median in mm, Permeability in units of m^2^, nitrogen content in %dw."))
+    caption = stringr::str_glue("Area proportions and other characteristics of the 8 seabed habitat classes defined in the model by depth, rock or sediment type. Grain size is the median in mm, Permeability in units of m^2^, nitrogen content in %dw."))
 ```
 
 `r table_nums("tab_habitat_proportions")`
@@ -274,12 +272,6 @@ This relationship has been documented in the North Sea implementation of the tem
 
 # Fixed ecological parameterisation {.unnumbered}
 
-## Domain-specific guilds {.unnumbered}
-
-StrathE2E represents guilds including Planktivorous Fish, Demersal Fish, Migratory Fish, Carnivorous Zooplankton, Omnivorous Zooplankton, Carnivorous/Scavenge feeding benthos, Suspension/Deposit feeding benthos and Macrophytes.
-To parameterise the model implementation for the domain region, biological and fishing parameters should be informed by biological and fishing data from domain-specific species that are representative of these guilds in the domain.
-Species that were present in fishing data were matched to existing StrathE2E species-guild allocations at the genus level, or species level where possible, and species that were not already allocated to guilds were allocated based on their diet and movement patterns.
-
 ## Configuration parameters {.unnumbered}
 
 ### Assimilation efficiencies for each living guild in the model. {.unnumbered}
@@ -294,22 +286,24 @@ Temperature dependency following a Q~10~ function.
 
 ### Q~10~ values for temperature dependent processes, and the Q~10~ reference temperature. {.unnumbered}
 
-Separate Q10 values for autotrophic uptake of nutrient, heterotrophic feeding, and heterotrophic metabolism based on literature data.
+Separate Q10 values for autotrophic uptake of nutrient, heterotrophic feeding, and heterotrophic metabolism based on literature data, documented in the North Sea implementation for the StrathE2E2 package [@heath2021].
 
 ### Light intensity required to saturate autotrophic nutrient uptake. {.unnumbered}
 
 Light saturation intensity for nutrient uptake cannot be treated as a fitted value since it is confounded with other uptake parameters.
-Value estimated from survey of laboratory experiments.
+Value estimated from survey of laboratory experiments, documented in the North Sea implementation for the StrathE2E2 package [@heath2021].
 
 ### Annual weight specific fecundities of planktivorous and demersal fish guilds and the two benthos guilds in the model (suspension/deposit feeders and carnivore/scavenge feeders). {.unnumbered}
 
-Guild-level values derived by surveying the literature.
+Guild-level values derived by surveying the literature, documented in the North Sea implementation for the StrathE2E2 package [@heath2021].
 
 ### Harvestable biomass density threshold for each resource guild. {.unnumbered}
 
 The living resource guilds in the model represent a mixture of harvestable and non-harvestable species, especially the invertebrate guilds.
 The density threshold parameter sets a limit for the guild biomass below which the harvestable species are assumed to be exhausted.
 Values set from analysis of trawl, plankton and benthos survey species biomass compositions.
+These values reflect harvestable biomass density in Scotland, with the same levels applied to the Southern Benguela implementation.
+Values and sources are documented in the North Sea implementation for the StrathE2E2 package [@heath2021].
 
 ### Minimum inedible biomass of carnivorous zooplankton. {.unnumbered}
 
@@ -320,15 +314,15 @@ The value is a rough estimate of scyphomedusae biomass.
 
 ## Event timing parameters {.unnumbered}
 
-| StrathE2E guild                      | Species                            |
-|--------------------------------------|------------------------------------|
-| Planktivorous fish                   | Anchovy (*Engraulis encrasicolus*) |
-| Demersal fish                        | Cape Hakes (*Merluccius spp.)*     |
-| Suspension/Deposit feeding benthos   | Black and Magellan mussels         |
-| Carnivorous/Scavenge feeding benthos |                                    |
-| Migratory fish                       |                                    |
+| StrathE2E guild | Species |
+|----|----|
+| Planktivorous fish | Anchovy (*Engraulis encrasicolus*) |
+| Demersal fish | Cape Hakes (*Merluccius spp.)* |
+| Suspension/Deposit feeding benthos | Black (Choromytilus meridionalis) and Magellan (Aulacomya atra) mussels |
+| Carnivorous/Scavenge feeding benthos | West Coast Rock Lobster (Jasus lalandii) |
+| Migratory fish | Tunas and billfish (14 species) |
 
-: Species used to parameterise guild event timings
+: Species used to parameterise guild event timings using literature/expert knowledge.
 
 Event timing parameters summarise the timing of larval influx for each guild and how long larvae remain in the water in the domain.
 Additionally, the event timing parameter file contains information on migratory fish movement in and out of the domain and the overall domain surface area.
@@ -369,26 +363,29 @@ We estimate the proportion of migratory fish entering the model domain is 0.1.
 
 Monthly resolution time-varying physical and chemical driving parameters for the model were derived from a variety of sources:
 
--   Temperature, vertical mixing coefficients, volume fluxes, and boundary nutrient, detritus and phytoplankton concentrations from outputs of an ensemble of NEMO-ERSEM coupled hydro-geochemical model runs with a 2015 historical/future split CITE YURI XXX.
+-   Temperature, vertical mixing coefficients, volume fluxes, and boundary nutrient, detritus and phytoplankton concentrations from outputs of an ensemble of NEMO-ERSEM coupled hydro-geochemical model runs with a 2015 historical/future split [@artioli2023].
 -   Surface shortwave radiation from CMIP6 used to force the NEMO-ERSEM coupled hydro-geochemical runs mentioned above.
 -   Freshwater volume outflows from CMIP6 used to force the NEMO-ERSEM coupled hydro-geochemical runs mentioned above.
 -   River nitrate and ammonia concentrations taken from the IMAGE model to force the NEMO-ERSEM coupled hydro-geochemical runs mentioned above.
 -   Atmospheric deposition of nitrate and ammonia from ISIMIP3a ([Inter-Sectoral Impact Model Intercomparison Project](https://data.isimip.org/10.48364/ISIMIP.759077.2); [@yang2022]) with SSP projects from ISIMIP3b used to force the NEMO-ERSEM coupled hydro-geochemical runs mentioned above.
 -   Remote sensing data products on Suspended Particulate Matter (Globcolour L3b; <ftp://ftp.hermes.acri.fr/GLOB/merged/month/>).
--   Habitat disturbance due to tidal currents and waves from **TBD** [@laverick2022].
--   Wave height, period, and direction from the ERA-5 reanalysis monthly means accessed through [CDS](https://cds.climate.copernicus.eu/cdsapp#!/dataset/10.24381/cds.f17050d7?tab=overview) for 1980-2021 [@Hersbach19].
+-   Wave height, period, and direction from the ERA-5 reanalysis monthly means accessed through [CDS](https://cds.climate.copernicus.eu/cdsapp#!/dataset/10.24381/cds.f17050d7?tab=overview) for 1980-2021 [@hersbach2020].
 
-Details of how these data were processed are given below, supported by the [nemomedusR](https://jack-h-laverick.github.io/nemoRsem/) and [MiMeMo.tools](https://jack-h-laverick.github.io/MiMeMo.tools/) packages.
+Details of how these data were processed are given below, supported by the [nemoRsem](https://jack-h-laverick.github.io/nemoRsem/) and [MiMeMo.tools](https://jack-h-laverick.github.io/MiMeMo.tools/) packages.
+
+### Habitat disturbance due to tidal currents and waves:
+
+Relative levels of habitat disturbance for each sediment-habitat category were derived from existing StrathE2E models for the Greenland and Barents Seas [@laverick2022].
 
 ### NEMO-ERSEM ensemble: {.unnumbered}
 
-Four different NEMO-ERSEM runs were used to parameterise different versions of the Southern Benguela implementation of StrathE2E.
+Four different NEMO-ERSEM runs were used to parameterise different versions of the Southern Benguela implementation of StrathE2E [@artioli2023].
 These four runs are a 2x2 factorial cross of two future projected scenarios (SSP126 and SSP370) with a historical hindcast from 2015, and forcing by two atmospheric models (CNRM and GFDL).
 In the following sections model output was processed for a 2010-2019 baseline period, and then decadal projections from 2020-2029 until 2060-2069.
 
 ### Vertical mixing coefficients between the model layers: {.unnumbered}
 
-Vertical diffusivity from the NEMO-ERSEM coupled hydro-geochemical model output was interpolated for each grid cell at the `r SDepth`m boundary depth between the shallow and deep layers of the offshore zone, and the `r DDepth`m boundary at the deep sea overhang.
+Vertical diffusivity from the NEMO-ERSEM coupled hydro-geochemical model output was interpolated for each grid cell at the `r SDepth`m boundary depth between the shallow and deep layers of the offshore zone.
 These values were summarised as monthly averages into period-specific climatological annual cycles of data for decadal periods for all combinations of SSPs and forcings.
 
 ### Monthly averaged temperatures for each water column layer: {.unnumbered}
@@ -420,7 +417,7 @@ ISIMIPb Projections for SSP126 and SSP370 were processed in the same way for dec
 
 ### Monthly averaged, freshwater river inflow rates (expressed as a daily proportion of the receiving layer volume), and concentrations of oxidised and reduced dissolved inorganic nitrogen in the inflowing river waters (mMN.m^-3^): {.unnumbered}
 
-Freshwater inflow derived from HadGEM2-ES model output [@jones2011] which forces the NEMO-MEDUSA model run used throughout our implementation.
+Freshwater inflow derived from HadGEM2-ES model output [@jones2011] which forces the NEMO-ERSEM model run used throughout our implementation.
 Monthly values were summaries into a climatological annual cycle of data for both the 2010-2019 and 2040-2049 periods.
 
 ### Volume fluxes into the model domain across open sea boundaries, and from the upper layer of the offshore/deep zone into the inshore/shallow zone, expressed as proportions of the receiving layer volume per day: {.unnumbered}
@@ -479,7 +476,7 @@ We assume that fishers fish for half of these days (12h per day) and convert the
 
 ### Pole and line {.unnumbered}
 
-Pole and line activity data is obtained from West et al. @west2024 as the number of vessels with active rights in South Africa for the 2019-2023 period.
+Pole and line activity data is obtained from @west2024 as the number of vessels with active rights in South Africa for the 2019-2023 period.
 The average duration of a fishing trip by this fleet is 14 days [@west2024].
 We assume that boats spend 2 weeks at sea and then 2 weeks on land, resulting in 182 days of fishing per year.
 We assume that boats spend 12h per day fishing and convert the activity to seconds.
@@ -487,9 +484,9 @@ The activity is then scaled by the proportion of 'tuna pole' activity occurring 
 
 ### Squid jig {.unnumbered}
 
-Squid jig activity is obtained from [@cochrane2014] as the total number of man-hours occurring in South Africa per year.
+Squid jig activity is obtained from @cochrane2014 as the total number of man-hours occurring in South Africa per year.
 We convert this to vessel-hours assuming that the average number of crew per vessel is 21 [@cochrane2014] and convert vessel hours to seconds.
-The activity is then scaled by the proportion of squid jig activity occurring within the domain (spatial data provided by [@sanbi2019]).
+The activity is then scaled by the proportion of squid jig activity occurring within the domain (spatial data provided by @sanbi2019).
 
 ### Longline {.unnumbered}
 
@@ -659,7 +656,7 @@ Target data is used for optimisation in the fitting of parameters.
 Biological target data for the region such as production measures, diet composition and Production/Biomass ratios were provided by Lynne Shannon and Kelly Ortega-Cisneros [@shannon2020].
 
 | StrathE2E Guild | EwE functional group |
-|------------------------------------|------------------------------------|
+|----|----|
 | Suspended detritus | Detritus |
 | Macrophytes | Benthic producers |
 | Phytoplankton | Phytoplankton 1, Phytoplankton 2 |
@@ -725,36 +722,55 @@ Season allocations: seasonal nutrient concentrations were calculated using Nov-F
 
 Seasonal averaged nitrate concentrations were calculated from World Ocean Atlas 2023 data.
 Monthly data were obtained from [World Ocean Atlas](https://www.ncei.noaa.gov/products/world-ocean-atlas).
-For the shallow water volume all 1$\degree$ cells touching the domain containing valid data were extracted from depths between 0 and `r SDepth`.
+For the shallow water volume all 1° cells touching the domain containing valid data were extracted from depths between 0 and `r SDepth`.
 For the deep water volume all cells touching the offshore domain were extracted from depths between `r SDepth` and `r DDepth`.
 The volumes of the water layers were calculated as the polygon area multiplied by the average depth of the area from mean sea level.
 
-### Sediment chemistry {.unnumbered}
-
 # Model fitting {.unnumbered}
+
+The model fitting or calibration process tunes model parameters to ensure baseline model results better represent observed data for the region.
+This process uses simulated annealing and the predicted likelihood of the observational (target) data to tune parameter values.
+This is conducted using 2010-2015 environmental driving data.
+The model fitting process is conducted for both CNRM-CM6-1-HR and GFDL-ESM4 driving data sets separately to reflect different model baseline conditions, creating a 'CNRM' and 'GFDL' model.
+The process is first conducted for CNRM driving data and the fitted parameters are then used as a baseline for the fitting of the GFDL model parameters.
+Shared Socio-economic Pathway 3-7.0 driving data are used for model fitting to represent emission/climate change trends experienced prior to 2015.
 
 ## CNRM {.unnumbered}
 
-First the CNRM-SSP3-7.0 variant is used for model fitting.
-To begin fitting the ecology component of the StrathE2E model to the target data, we first disabled guild landing and bycatch data and launched a round of simulated annealing (e2e_optimise_eco()), with the target data including primary and guild production estimates, as well as P:B ratios and nitrate concentrations from World Ocean Atlas.
-This round of fitting did not use the landings/bycatch or dietary consumption or composition target data.
-After manual tweaking to benthos guild harvesting and uptake parameters, a fit of 0.3 likelihood was reached.
-To fit the fishing component of the model, the updated model was launched with e2e_optimise_fishing().
-After this process, model likelihood reached 0.59, however guild yield curves for Planktivorous fish and Demersal fish suggested these guilds were being underfished with F/Fmsy \<\< 1.
+To begin fitting the ecology component of the StrathE2E model to the target data, we first disabled guild landing and bycatch data and launched a round of simulated annealing (`e2e_optimise_eco()`).
+The baseline parameter values for this initial fitting round were taken from the SENEGAL_MA StrathE2E model.
+Target data that were used for this round of fitting included primary and guild production estimates, as well as P:B ratios and nitrate concentrations from World Ocean Atlas.
+Fishing target data were excluded from the initial fitting process to allow ecological parameters to stabilise before fitting the fishing model.
+
+Suspension feeding benthos uptake rates and bird uptake and density dependent mortality rates were increased manually, along with adjustments to benthos guild production target values.
+Manual adjustments, along with the broader fitting process, can be found in [Jack-H-Laverick/MA.SouthAfrica](https://github.com/Jack-H-Laverick/MA.SouthAfrica).
+Following manual adjustments, a model likelihood of 0.3 was reached.
+The manually adjusted files were used to fit the ecology model uptake rate parameters by decreasing the CV of other parameter groups before simulated annealing.
+To fit the fishing component of the model, the model with updated uptake parameters was launched with e2e_optimise_fishing().
+Model likelihood reached 0.59, however guild yield curves for Planktivorous fish and Demersal fish suggested these guilds were being underfished with F/Fmsy \<\< 1.
 
 Fisheries data from Sea Around Us indicated that 2010-2019 landings were around 3.6 mMNpergWW per year, and indications of F/Fmsy from the Department of Forestry, Fisheries and the Environment [@dffe2012; @dffe2014; @dffe2016; @dffe2020] suggested that key Planktivorous fish species were being fished at an optimal level (F/Fmsy \~ 1) during this period.
-Additionally, Planktivorous fish are known to be highly variable across time, with a large spike in biomass from 1995-2008 [@coetzee2022].
-As a result, we hypothesised that Planktivorous Fish Production and P:B parameter estimates from EwE [@shannon2020] may not suitably represent the 2010-2019 time period that our model is based on as this EwE model was parameterised for the 1975-2015 time period, leading to Production and P:B ratios that were not consistent with Planktivorous Fish F/Fmsy and landings estimates for the 2010-2019 period.
-Under this assumption, Planktivorous Fish annual Production and P:B ratio estimates in the target data were turned off for subsequent fitting rounds.
+Additionally, Planktivorous fish are known to experience high temporal variability, with a large spike in biomass from 1995-2008 [@coetzee2022].
+As a result, we hypothesised that Planktivorous Fish Production and P:B parameter estimates from EwE [@shannon2020] may not suitably represent the 2010-2019 time period used for our model, as the EwE model was parameterised for the 1975-2015 time period.
+Incorrect target data time periods may lead to Production and P:B ratios that are not consistent with Planktivorous Fish F/Fmsy and landings estimates for the 2010-2019 period.
+Under this assumption, Planktivorous Fish annual Production and P:B ratio estimates in the target data were disabled for subsequent fitting rounds.
 
-To ensure that model fisheries landings remain close to the estimated 3.6 mMNpergWW and F/Fmsy remains close to 1 for Planktivorous Fish we performed several rounds of parameter searches based on the updated model, adjusting maxmimum nitrogen uptake and density dependent mortality rates for Planktivorous Fish, as well as adjusting Harvest Ratio scaling parameters.
+For subsequent fitting, the following process was first applied to Planktivorous fish and then to Demersal fish.
+This process includes a gridded evaluation of maximum nitrogen uptake rates, density dependent mortality rates, and harvest ratio scaling factor values.
+These parameters are used to adjust the guild landings and yield curve so that model landings and F/Fmsy represent target/literature values.
+
+To ensure Planktivorous fish yield curves were representative of target landings and F/Fmsy estimates, we performed several rounds of parameter searches based on the updated model, adjusting maxmimum nitrogen uptake and density dependent mortality rates for Planktivorous Fish, as well as adjusting Harvest Ratio scaling parameters.
 Once suitable Planktivorous Fish landings and yield curve were suitable according to the identified targets, parameters were tuned for Demersal Fish to acheive a F/Fmsy around 1.
+
 As with Demersal Fish event timing parameterisation, we assume Cape Hakes are a representative species for the guild, and acknowledge that Demersal Fish likely occupy a range of F/Fmsy levels.
-For example, DFFE @dffe2012;@dffe2014;@dffe2016;@dffe2020 assess many shark species to be fished at F \> Fmsy, while Agulhas Sole are assessed to have F \< Fmsy.
+For example, the Department of Forestry, Fisheries and the Environment [@dffe2012; @dffe2014; @dffe2016; @dffe2020] assess many shark species to be fished at F \> Fmsy, while Agulhas Sole are assessed to have F \< Fmsy.
 After tuning Demersal Fish parameters, maximum uptake rates for birds, seals and cetaceans were increased by 7, 5 and 3x respectively to prevent guild extinction.
-A round of simulated annealing was used to readjust ecological parameters, with standard deviations set to 10% of mean measures for landings target values, and Planktivorous Fish Production and P:B ratio target data turned off.
-Finally, an additional round of simulated annealing was used to confirm that model likelihood would not increase beyond 0.15.
+
+A round of simulated annealing was used to readjust ecological parameters, with standard deviations set to 10% of mean measures for landings target values (compared to the 25% used for other values), and Planktivorous Fish Production and P:B ratio target data disabled due to inconsistent modelled and target data time periods.
 The resulting model underrepresented Carnivorous/Scavenging Benthos landings, so an increase of the HR-scale factor of 150x was applied, increasing model likelihood to 0.5.
+Finally, an final round of simulated annealing was used to confirm that model likelihood would not increase beyond the maximum value reached (0.5).
+
+![Model outputs and observed target data values for the CNRM-CM6-1-HR model for the 2010-2015 SSP3-7.0 variant. Final model likelihood is 0.5.](img/CNRM_2010-2015_obs.png)
 
 | StrathE2E Guild    | Species    |
 |--------------------|------------|
@@ -767,14 +783,16 @@ The resulting model underrepresented Carnivorous/Scavenging Benthos landings, so
 
 ## GFDL {.unnumbered}
 
-After CNRM fitting, the GFDL-SSP3-7.0 variant is used for model fitting.
-The initial conditions and parameters from final fitting of CNRM were used to launch fitting for the GFDL model.
+For GFDL-ESM4 model fitting, the initial conditions and parameters from the final fitting round of CNRM were used.
+A single round of simulated annealing was used to adjust the ecological parameters from the CNRM baseline to the GFDL environmental forcing data.
+
+![Model outputs and observed target data values for the GFDL-ESM4 model for the 2010-2015 SP3-7.0 variant. Final model likelihood is 0.51.](img/GFDL_2010-2015_obs.png)
 
 # End {.unnumbered}
 
 ## Acknowledgements {.unnumbered}
 
-Financial support for the development of the Southern Benguela implementation of StrathE2E2 came from the European Union's Horizon 2020 research and innovation programme (Mission Atlantic - No. ).
-We are grateful to:
+Financial support for the development of the Southern Benguela implementation of StrathE2E2 came from the European Union's Horizon 2020 research and innovation programme (Mission Atlantic).
+We are grateful to: Yuri Artioli and the Plymouth Marine Laboratory for providing environmental forcing data for StrathE2E in the form of NEMO-ERSEM model projections.
 
 ## References {.unnumbered}
