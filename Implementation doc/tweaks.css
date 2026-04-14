@@ -53,29 +53,43 @@ div.csl-entry {
   margin-bottom: 20px;
 }
 
-
-/* --- 1. Force Running Content to Top-Right on Left Pages --- */
-
-@page :left {
-  /* Set the default header box content for the left page to be empty */
-  @top-left, @top-center {
-    content: none !important;
-  }
-  
-  /* Crucial: Explicitly define the top-right content for the left page.
-     'running(header)' is a common variable name for the document title/label.
-     If 'header' doesn't work, try 'doc-title' or 'section-title'. */
-  @top-right {
-    content: running(header, first) counter(page) !important; /* Forces the running header AND the page number */
-    /* Add padding to position it well */
-    padding-top: 10pt !important;
-    padding-right: 1cm !important;
-  }
+/* Remove running headers from all pages */
+@page {
+  @top-left { content: none !important; }
+  @top-right { content: none !important; }
+  @top-center { content: none !important; }
 }
 
-/* --- 2. Remove Content from Left side of Right Pages (Ensuring Symmetry) --- */
-@page :right {
-  @top-left, @top-center {
-    content: none !important;
-  }
+/* Specifically target the running element variable used by pagedown */
+.running-h1, .running-h2, .running-h3 {
+  display: none !important;
+}
+
+/* 1. Ensure the whole document defaults to Quicksand */
+body {
+  font-family: 'Quicksand', sans-serif !important;
+}
+
+/* 2. Format tables with grid lines and the correct font */
+table {
+  width: 100%;
+  border-collapse: collapse; /* Prevents double lines */
+  font-family: 'Quicksand', sans-serif !important; /* Forces table to match document */
+  margin: 1.5em 0;
+  border: 1px solid #333333; /* Outer border */
+}
+
+/* 3. Add separation lines between columns and rows */
+table th, 
+table td {
+  border: 1px solid #cccccc !important; /* Light grey grid lines */
+  padding: 10px;
+  font-size: 11pt; /* Adjust size to match your body text */
+}
+
+/* 4. Style the table header */
+table thead th {
+  background-color: #f2f2f2; /* Light background for header row */
+  font-weight: bold;
+  border-bottom: 2px solid #333333 !important; /* Thicker line under header */
 }
