@@ -8,7 +8,7 @@ library(ggplot2)
 library(glue)
 
 source("./R scripts/@_model_config.R")
-source("./R scripts/@_Region_file.R")
+source("./R scripts/@_Region file.R")
 
 domain_size <- readRDS("./Objects/Domains.rds") %>% # We need landings as tonnes per m^2
     st_transform(crs = crs) %>%

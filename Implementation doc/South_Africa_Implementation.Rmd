@@ -1,0 +1,798 @@
+---
+title: "The Southern Benguela Current\n implementation"
+subtitle: "StrathE2E2"
+author: "Jack H Laverick<br> Benjamin Grier<br> Kelly Ortega Cisneros<br> Lynne Shannon<br> Douglas C Spiers<br> Michael R Heath"
+date: "`r format(Sys.time(), '%d %b %Y')`"
+output: 
+  pagedreport::paged_hazelnuts:
+    self_contained: true
+    logo: "https://www.r-project.org/logo/Rlogo.svg"
+    img_to_dark: TRUE
+    logo_to_white: TRUE
+    front_img: "img/Front.png"
+    back_img: "img/Back.png"
+    other_css: "tweaks.css"
+knit: (function(inputFile, encoding) {
+      pagedown::chrome_print(inputFile, 
+                        encoding = encoding, 
+                        timeout = 150)})
+main-color: "#000000"
+secondary-color: "#737372"
+main-font: "Quicksand"
+bibliography: "Impl_Strath_SouthAfrica.bib"
+editor_options: 
+  markdown: 
+    wrap: sentence
+---
+
+```{r setup, include=FALSE}
+
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE, fig.align = "left")
+rm(list=ls())
+library(tidyverse)
+library(sf)
+library(gt)
+library(readxl)
+
+pagebreak <- function() {
+  if(knitr::is_latex_output())
+    return("\\newpage")
+  else
+    return('<div style="page-break-before: always;" />')
+}
+
+source("./R scripts/@_Region file.R")
+Period <- "2010-2019-CNRM-ssp126"
+
+table_nums <- captioner::captioner(prefix = "Table ")
+
+table.ref <- function(x) stringr::str_extract(table_nums(x), "[^:]*")
+
+model <- StrathE2E2::e2e_read(implementation, Period, models.path="./Files/") # Load implementation
+
+Area <- read.csv(str_glue("Files/{implementation}/{Period}/Param/event_timing_{toupper(implementation)}_2010-2019.csv")) %>% 
+  filter(str_detect(Description, "km2")) %>% 
+  .$Value                                                     # Get size of the model domain
+Area <- round(Area)
+
+```
+
+# Introduction {.unnumbered}
+
+This document describes the configuration of StrathE2E2 for the southern Benguela Current System in South Africa and its parameterisation to enable stationary state fitting for 2010-2070.
+These represent contrasting periods of environmental conditions.
+
+Volumetric and seabed habitat data define the physical configuration of the system.
+We regard these as being fixed in time.
+Similarly, we regard the physiological parameters of the ecology model as being fixed in time.
+Some of these are set from external data.
+The remainder are fitted, as detailed here.
+Changes in the model performance between the different time periods therefore stem from the hydrodynamic, hydro-chemical and fishery driving data.
+These are detailed in the ecological drivers and fishing fleet sections.
+
+<br>
+
+> Department of Mathematics and Statistics, University of Strathclyde, Glasgow, UK.
+>
+> E-mail: [m.heath\@strath.ac.uk](mailto:m.heath@strath.ac.uk){.email}
+>
+> The code written to support this parameterisation is available on [github](https://github.com/Jack-H-Laverick/MA.SouthAfrica).
+
+# Model Domain {.unnumbered}
+
+The model domain for the South Africa case study - Southern Benguela extends along the western and southern coastlines of South Africa from the South Africa - Namibia border in the north-west to the Agulhas Bank in the south-east.
+The eastern extent of the model domain was chosen to encompass the region where the Agulhas current terminates and the Southern Benguela current begins at the Agulhas Bank, marking a distinct change in environmental conditions [@lutjeharms2006].
+This region is an important spawning ground for many species that dispers north-westward using the Southern Bengeula current.
+The Southern Benguela and Agulhas Bank region also differs substantially in fishing activity compared to the eastern coast under the Agulhas current [@globalfishingwatch2025].
+
+The model splits the domain into three zones, inshore/shallow, offshore/shallow, and offshore/deep (Figure \@ref(fig:spatialschematic)).
+The inshore/shallow zone covers waters shallower than `r SDepth` m .
+The offshore zone covers the remaining area of the model domain (Figure \@ref(fig:habitats)).
+The offshore zone is divided further into a shallow and deep layer.
+The shallow layer represents water from the surface to `r SDepth` m depth, and shares a boundary with the inshore shallow zone.
+The offshore/deep zone covers the same area as the offshore/shallow zone, but represents water between `r SDepth` m and `r DDepth` m deep.
+There is a second internal boundary between the two offshore zones.
+
+The outer boundary of the offshore zone, and the model domain at `r DDepth`m deep represents a boundary between distinct fishing activity levels that occurs across the continental shelf gradient [@globalfishingwatch2025].
+In consultation with local collaborators, we imposed additional boundaries to limit the extent of the domain between 14.45E and 22.5E, and 28.6S and 36.98S.
+
+![(#fig:spatialschematic) The spatial structure of StrathE2E; Ocean volumes and seafloor habitats. StrathE2E is built around a simplified spatial structure which represents shelf seas. These spatial units are connected to each other and to boundaries as shown to the right. The volumes connected to each spatial component are highlighted in blue.](img/schematic%20overhang.png)
+
+The seafloor of the model domain is represented by 5 habitat types.
+There are three sediment classes for the inshore zone – fine (muddy, 1), medium (sandy, 2) and coarse (gravel, 3).
+The fourth class (rock, 0) represents an absence of soft sediment.
+The rock class has different geochemical properties and supports the kelp forests in the model food web.
+
+## Methodology {.unnumbered}
+
+Sand, mud and gravel sediment areas were derived from Birch et al. (1986) sediment texture map of the South African coast.
+As the sediment map is in scanned-pdf format, this was digitised, and combined with rock habitat data from the South African National Biodiversity Institute (SANBI, 2018) using the following methods to create a single spatial dataset.
+
+1.  Map image georeferenced using thin-line-splice method (QGIS).
+2.  Colours corrected 'GNU Image Manipulation Program' to create areas of solid colour values and increase contrast between similar colours.
+3.  Corrected raster map image was polygonised (QGIS).
+4.  Categories of sediment were simplified to 'sand' (contains 'muddy sand' and 'sand'), 'mud' (contains 'sandy mud', 'gravelly mud' and 'mud') and 'gravel' (contains 'sandy gravel', 'gravel' and 'mud-sand-gravel'), and the polygons were cropped to the domain region.
+5.  SANBI National Biodiversity Assessment habitat classification polygons containing 'Substratum' variable with the name 'Rocky' were cropped to the domain region.
+6.  Rocky polygons were overlaid and merged to create a habitat map containing sand, mud, gravel and rock polygons for inshore and offshore zones respectively.
+
+![(#fig:habitats) Map of the Southern Benguela model domain. StrathE2E defines seabed sediment habitats as inshore (blues) or offshore (yellows). Within each zone, three sediment classes are represented – fine (muddy, 1), medium (sandy, 2) and coarse (gravel, 3). A fourth class (rock, 0) represents an absence of soft sediment. Sedimentary data are derived from Birch et al. (1986), with the spatial extent of rock sediment derived from SANBI (2018).](img/habitats.png)
+
+# Fixed physical parameterisation {.unnumbered}
+
+## Background {.unnumbered}
+
+#### Parameters for relationship between median grain size, sediment porosity and permeability. Permeability is used as the basis for estimating hydraulic conductivity which is a parameter in the representation of sediment processes in the model: {.unnumbered}
+
+Porosity (proportion by volume of interstitial water) and permeability of each sediment habitat were derived from median grain sizes using empirically-based relationships.
+
+$$log_{10}(porosity) = p_3 + p_4\left(\frac{1}{1+e^{(\frac{-log_{10}(D_{50})-p_1}{p_2})}}\right)$$ D~50~ = median grain size (mm); parameters p~1~ = -1.227, p~2~ = -0.270, p~3~ = -0.436, p~4~ = 0.366 (Heath et al. 2015)
+
+$$permeability = 10^{p_5}∙D_{50}^{*p_6}$$
+
+where D~50~\* = 0.11 ≤ D~50~ ≤ 0.50 p~5~ = -9.213, p~6~ = 4.615 [@heath2015].
+
+These relationships are coded into the StrathE2E2 R-package with the parameters in the csv setup file for the North Sea model.
+The parameters are probably a reasonable starting point for any future model of a new region.
+Derivation of the parameters is described in the following text sub-sections.
+
+#### Parameters for in-built relationship between sediment mud content, and slowly degrading (refractory) organic nitrogen content of seabed sediments (see description in this document): {.unnumbered}
+
+Values for each sediment type derived from parameterised relationships between total organic nitrogen content of sediments (TON%, percent by weight), mud content (mud%, percent by weight) and median grain size (D~50~, mm).
+
+$$mud\% = 10^{p_7}∙𝐷_{50}^{𝑝_8}$$ p~7~ = 0.657, p~8~ = -0.800
+
+$$TON\% = 10^{𝑝_9}∙mud\%^{𝑝_{10}}$$
+
+p~9~ = -1.965, p~10~ = 0.590
+
+Proportion of TON estimated to be refractory = 0.9
+
+These relationships are coded into the StrathE2E2 R-package with the parameters in the csv setup file for the North Sea model.
+The relationships and parameters are probably a reasonable starting point for any future model of a new region, though there are clear regional variations.
+Derivation of the parameters is described in the following sub-sections.
+
+## Model area proportions {.unnumbered}
+
+```{r area_proportions_cap}
+
+tab_area_proportions_cap <- table_nums(name = "tab_area_proportions", 
+    caption = stringr::str_glue("Area-proportions of the inshore and offshore zones and the thicknesses of the                                        water column layers. The sea surface area of the model domain is an estimated                                         {round(Area)} km^2^."))
+```
+
+`r table_nums("tab_area_proportions")`
+
+```{r area_proportions}
+
+data_frame(Property = c("Sea-surface area proportion",
+                        "Upper layer thickness (m)",
+                        "Lower layer thickness (m)"),
+           `Inshore/shallow` = c(model[["data"]][["physical.parameters"]][["x_shallowprop"]], 
+                                 model[["data"]][["physical.parameters"]][["si_depth"]], 
+                                 NA),
+           `Offshore/deep` = c(1 - model[["data"]][["physical.parameters"]][["x_shallowprop"]], 
+                               model[["data"]][["physical.parameters"]][["so_depth"]], 
+                               model[["data"]][["physical.parameters"]][["d_depth"]])) %>% 
+  gt() %>% 
+  fmt_number(columns = c("Offshore/deep", "Inshore/shallow"), decimals = 4, use_seps = FALSE)
+
+
+```
+
+Sediment polygons containing sand, mud, gravel and rock classifications for the inshore and offshore domain regions (Figure \@ref(fig:habitats)).
+The model area proportion was calculated as the proportion of the total domain area occupied by each habitat (e.g. proportion of domain area occupied by s0 inshore-rock habitat), with the sum of all habitat proportions equal to 1.
+(`r table.ref("tab_habitat_proportions")`).
+\newpage
+
+```{r habitat_proportions_cap}
+tab_habitat_proportions_cap <- table_nums(name = "tab_habitat_proportions", 
+    caption = stringr::str_glue("Area proportions and other characteristics of the 8 seabed habitat classes defined in the model by depth, rock or sediment type. Grain size is the median in mm, Permeability in units of m^2^, nitrogen content in %dw."))
+```
+
+`r table_nums("tab_habitat_proportions")`
+
+```{r habitat_proportions}
+
+physical <- read.csv(str_glue("Files/{implementation}/{Period}/Param/physical_parameters_{toupper(implementation)}.csv"))
+  
+proportions <- which(str_detect(physical$Description, "Area_proportion")& physical$Value != 0)
+porosity <- which(str_detect(physical$Description, "Defined_porosity"))
+permeability <- which(str_detect(physical$Description, "Defined_permeability"))
+nitrogen <- which(str_detect(physical$Description, "Defined_total_N"))
+grain <- which(str_detect(physical$Description, "grain_size"))
+
+tibble(Habitat = c("S0", "S1", "S2", "S3", "D0", "D1", "D2", "D3"),
+           Depth = c("Shallow","Shallow","Shallow","Shallow", "Deep", "Deep" , "Deep", "Deep"),
+           Zone = c("Inshore","Inshore","Inshore","Inshore", "Offshore", "Offshore", "Offshore", "Offshore"),
+           Sediment = c("None (Rock)", "Fine", "Medium", "Coarse","None (Rock)", "Fine", "Medium", "Coarse"),
+           `Area Proportion` = physical$Value[proportions],
+           `Grain size` = c(NA, physical$Value[grain[1:3]], NA, physical$Value[grain[4:6]]),
+           Porosity = c(NA, physical$Value[porosity[1:3]], NA, physical$Value[porosity[4:6]]),
+           Permeability = c(NA, physical$Value[permeability[1:3]], NA, physical$Value[permeability[4:6]]),
+           `Nitrogen content` = c(NA, physical$Value[nitrogen[1:3]], NA, physical$Value[nitrogen[4:6]])) %>% 
+  group_by(Zone, Depth) %>% 
+  gt() %>% 
+  fmt_number(columns = c("Area Proportion", "Grain size", "Porosity", "Permeability", "Nitrogen content"), 
+                         decimals = 4, use_seps = FALSE) %>% 
+  cols_align(align = 'center',
+             columns = vars(`Area Proportion`, `Grain size`, Porosity, Permeability, `Nitrogen content`)) %>% 
+  tab_options(row_group.background.color = "whitesmoke")
+
+
+```
+
+## Sediment porosity {.unnumbered}
+
+Log-transformed porosity has been shown to have a sigmoidal relationship with log~10~(median grain size) (D~50~, mm) [@wilson2018]:
+
+$$log_{10}(porosity) = p_3 + p_4\left(\frac{1}{1+e^{(\frac{-log_{10}(D_{50})-p_1}{p_2})}}\right)$$
+
+We use this relationship to calculate porosity for sea bed sediments in the Norwegian Sea (`r table.ref("tab_habitat_proportions")`), using an alternative parameterisation to Wilson [@pace2021].
+This alternative set of parameters extends the relationship to fine, muddy sediments (`r table.ref("tab_porosity")`).
+
+```{r porosity_cap}
+
+tab_porosity_cap <- table_nums(name = "tab_porosity", 
+    caption = "The four parameters for the function relating sediment porosity to median grain size. From Pace et al. (in review)")
+```
+
+`r table_nums("tab_porosity")`
+
+```{r tab_porosity}
+
+d50_to_pore <- which(str_detect(physical$Description, "porosity_and_grainsize"))
+
+data_frame(Parameter = paste0("P", 1:4),
+           `Fitted value` = physical$Value[d50_to_pore]) %>%
+  pivot_wider(names_from = Parameter, values_from = `Fitted value`) %>% 
+  gt()
+
+```
+
+## Hydraulic conductivity {.unnumbered}
+
+Hydraulic conductivity (H, m.s^-1^) represents the ease with which fluids flow through the particle grain matrix.
+The related term ‘permeability’ (m^-2^) is a measure of the connectedness of the fluid filled void spaces between the particle grains.
+Permeability is a function only of the sediment matrix, whilst conductivity is a function of both the sediment and the permeating fluid, in particular the fluid viscosity and density.
+Hydraulic conductivity is related to permeability by:
+
+$$H = Permeability∙fluid\;density∙\frac{𝑔}{dynamic\;viscosity}$$
+
+where: seawater density = 1027 kg.m^-3^ at salinity 35 and temperature 10°C; seawater dynamic viscosity = 1.48 x 10^-3^ kg.m^-1^.s^-1^ at salinity 35 and temperature 10°C; g = acceleration due to gravity = 9.8 m.s^-1^
+
+Hence, $H = Permeability · 6.8004·10^6$ (m.s^-1^ at salinity 35 and temperature 10°C)
+
+Whole sediment permeability can be related to the proportion of sediment classed as mud (D~50~ \< 62 μm) [@pace2021].
+This relationship was used in the production of the Norwegian Basin model (`r table.ref("tab_habitat_proportions")`).
+
+## Sediment organic nitrogen content {.unnumbered}
+
+The magnitude of the static (refactory) organic nitrogen detritus pool in each sediment type is a required input to the model.
+The code includes an option to impute values from empirical relationships between total organic nitrogen (TON) and mud content, and between mud content and median grain size.
+This relationship has been documented in the North Sea implementation of the temperate StrathE2E2 package [@heath2021], and is based on sediment data off northeast Scotland.
+
+# Fixed ecological parameterisation {.unnumbered}
+
+## Configuration parameters {.unnumbered}
+
+### Assimilation efficiencies for each living guild in the model. {.unnumbered}
+
+Fixed parameters defining the proportion of ingested mass of food that contributes to new body tissue, after subtracting defecation and the metabolic costs of digestion and synthesis [@heath2012].
+
+### Biomass loss rates due to temperature-dependent metabolism for each living resource guild. {.unnumbered}
+
+Proportion of biomass lost to ammonia per day due to non-feeding related metabolism at a given reference temperature.
+Rates for individual guilds broadly related to typical body mass of representative species.
+Temperature dependency following a Q~10~ function.
+
+### Q~10~ values for temperature dependent processes, and the Q~10~ reference temperature. {.unnumbered}
+
+Separate Q10 values for autotrophic uptake of nutrient, heterotrophic feeding, and heterotrophic metabolism based on literature data, documented in the North Sea implementation for the StrathE2E2 package [@heath2021].
+
+### Light intensity required to saturate autotrophic nutrient uptake. {.unnumbered}
+
+Light saturation intensity for nutrient uptake cannot be treated as a fitted value since it is confounded with other uptake parameters.
+Value estimated from survey of laboratory experiments, documented in the North Sea implementation for the StrathE2E2 package [@heath2021].
+
+### Annual weight specific fecundities of planktivorous and demersal fish guilds and the two benthos guilds in the model (suspension/deposit feeders and carnivore/scavenge feeders). {.unnumbered}
+
+Guild-level values derived by surveying the literature, documented in the North Sea implementation for the StrathE2E2 package [@heath2021].
+
+### Harvestable biomass density threshold for each resource guild. {.unnumbered}
+
+The living resource guilds in the model represent a mixture of harvestable and non-harvestable species, especially the invertebrate guilds.
+The density threshold parameter sets a limit for the guild biomass below which the harvestable species are assumed to be exhausted.
+Values set from analysis of trawl, plankton and benthos survey species biomass compositions.
+These values reflect harvestable biomass density in Scotland, with the same levels applied to the Southern Benguela implementation.
+Values and sources are documented in the North Sea implementation for the StrathE2E2 package [@heath2021].
+
+### Minimum inedible biomass of carnivorous zooplankton. {.unnumbered}
+
+The carnivorous zooplankton guild is a key component of the food web, predated on by all the fish and top-predators.
+However it represents an extremely diverse range of fauna many of which are not edible in significant quantities by the guild predators, e.g. scyphomedusae.
+A minimum edible threshold is set to ensure that the guild as a whole cannot be extirpated by predation.
+The value is a rough estimate of scyphomedusae biomass.
+
+## Event timing parameters {.unnumbered}
+
+| StrathE2E guild | Species |
+|----|----|
+| Planktivorous fish | Anchovy (*Engraulis encrasicolus*) |
+| Demersal fish | Cape Hakes (*Merluccius spp.)* |
+| Suspension/Deposit feeding benthos | Black (Choromytilus meridionalis) and Magellan (Aulacomya atra) mussels |
+| Carnivorous/Scavenge feeding benthos | West Coast Rock Lobster (Jasus lalandii) |
+| Migratory fish | Tunas and billfish (14 species) |
+
+: Species used to parameterise guild event timings using literature/expert knowledge.
+
+Event timing parameters summarise the timing of larval influx for each guild and how long larvae remain in the water in the domain.
+Additionally, the event timing parameter file contains information on migratory fish movement in and out of the domain and the overall domain surface area.
+Event timing parameters were obtained using a literature review and collaborator contribution from Lynne Shannon and Kelly Ortega-Cisneros, and are included in days since January 1st and days in duration.
+
+### Spawning and recruitment start dates and durations for fish {.unnumbered}
+
+To summarise event timing information for Planktivorous and Demersal fish guilds, we estimate spawning and recruitment timings for the species that contribute the greatest biomass to the guilds and use these as guild estimates.
+This summarisation method prevents impossible event timings from occurring when using mean values to summarise guild event timings such as very short duration spawning period and much longer duration recruitment period.
+
+For planktivorous fish the highest contributing species to the guild is Anchovy (Engraulis encrasicolus) according to Shannon et al. (2020) domain biomass estimates.
+We take spawning and recruitment timing estimates for Anchovy from Mullon et al. (2003) and Hutchings et al. (1998) respectively.
+Combining these sources we parameterised planktivorous fish event timings as spawning for Anchovy from October (273 days since Jan 1) spanning 90 days, and a recruitment period from April (90 days since Jan 1) spanning 90 days.
+
+For demersal fish, the highest contributing species (or genus) to the guild are Cape Hakes (Merluccius spp.) according to Shannon et al. (2020) domain biomass estimates.
+We take spawning and recruitment timing estimates for Cape Hakes from Grote et al. (2007) and Grote et al. (2012).
+Combining these sources we parameterised the demersal fish guild as having a spawning period from June (180 days since Jan 1) spanning 90 days, and a recruitment period 150 days later (330 days since Jan 1) spanning 90 days.
+
+### Spawning and recruitment start dates and durations for benthos guilds {.unnumbered}
+
+Suspension / Deposit feeding benthos is a wide and largely unknown guild in the South African domain.
+Spawning start and duration timing for this guild are estimated based on information for the Black and Magellan mussel from Cook (1978), with spawning starting in November (300 days since Jan 1) and spanning 60 days.
+There is no available information on recruitment timings for this guild, thus we estimate that recruitment begins 60 days post spawning-start (30 days since Jan 1), and spans 90 days.
+
+The species with the highest contribution to Carnivorous / Scavenge feeding benthos fisheries in the region is the West Coast Rock Lobster.
+From personal communication with Lynne Shannon and Kelly Ortega-Cisneros, West Coast Rock Lobster spawn during October and November and larvae are present in the water column across most of the year.
+To implement this ecological process we set spawning for this guild to start in October (270 days since Jan 1) spanning for 60 days, with a guild recruitment start day of 1 (days since Jan 1), and a duration of 360 days.
+This means that additional larvae are added to the water column in Summer, and the recruitment of larvae to benthos occurs slowly over the entire year resulting in larvae present in the water column year round.
+
+### Migratory fish event timing {.unnumbered}
+
+There are an estimated 14 migratory species in the migratory fish guild for the domain, with Yellowfin Tuna remaining in the domain region year-round (pers comms Shannon and Ortega-Cisneros (2025).), therefore we estimate the proportion of migratory fish domain-biomass that remains in the domain year round as 1/14.
+In addition Tunas and Swordfish have a general domain presence from November to March, thus we parameterise the Immigration of these species as starting in November (300 days since Jan 1), spanning for one month (330 days since Jan 1) and the emmigration of these species from the domain as starting in March (60 days since Jan 1), spanning for one month (90 days since Jan 1).
+We take the total ocean biomass of migratory fish to be equal to the value from the closest existing implementation (Saint Helena Island), with 5,214,177 tonnes wet weight.
+We estimate the proportion of migratory fish entering the model domain is 0.1.
+
+# Ecological drivers {.unnumbered}
+
+Monthly resolution time-varying physical and chemical driving parameters for the model were derived from a variety of sources:
+
+-   Temperature, vertical mixing coefficients, volume fluxes, and boundary nutrient, detritus and phytoplankton concentrations from outputs of an ensemble of NEMO-ERSEM coupled hydro-geochemical model runs with a 2015 historical/future split [@artioli2023].
+-   Surface shortwave radiation from CMIP6 used to force the NEMO-ERSEM coupled hydro-geochemical runs mentioned above.
+-   Freshwater volume outflows from CMIP6 used to force the NEMO-ERSEM coupled hydro-geochemical runs mentioned above.
+-   River nitrate and ammonia concentrations taken from the IMAGE model to force the NEMO-ERSEM coupled hydro-geochemical runs mentioned above.
+-   Atmospheric deposition of nitrate and ammonia from ISIMIP3a ([Inter-Sectoral Impact Model Intercomparison Project](https://data.isimip.org/10.48364/ISIMIP.759077.2); [@yang2022]) with SSP projects from ISIMIP3b used to force the NEMO-ERSEM coupled hydro-geochemical runs mentioned above.
+-   Remote sensing data products on Suspended Particulate Matter (Globcolour L3b; <ftp://ftp.hermes.acri.fr/GLOB/merged/month/>).
+-   Wave height, period, and direction from the ERA-5 reanalysis monthly means accessed through [CDS](https://cds.climate.copernicus.eu/cdsapp#!/dataset/10.24381/cds.f17050d7?tab=overview) for 1980-2021 [@hersbach2020].
+
+Details of how these data were processed are given below, supported by the [nemoRsem](https://jack-h-laverick.github.io/nemoRsem/) and [MiMeMo.tools](https://jack-h-laverick.github.io/MiMeMo.tools/) packages.
+
+### Habitat disturbance due to tidal currents and waves:
+
+Relative levels of habitat disturbance for each sediment-habitat category were derived from existing StrathE2E models for the Greenland and Barents Seas [@laverick2022].
+
+### NEMO-ERSEM ensemble: {.unnumbered}
+
+Four different NEMO-ERSEM runs were used to parameterise different versions of the Southern Benguela implementation of StrathE2E [@artioli2023].
+These four runs are a 2x2 factorial cross of two future projected scenarios (SSP126 and SSP370) with a historical hindcast from 2015, and forcing by two atmospheric models (CNRM and GFDL).
+In the following sections model output was processed for a 2010-2019 baseline period, and then decadal projections from 2020-2029 until 2060-2069.
+
+### Vertical mixing coefficients between the model layers: {.unnumbered}
+
+Vertical diffusivity from the NEMO-ERSEM coupled hydro-geochemical model output was interpolated for each grid cell at the `r SDepth`m boundary depth between the shallow and deep layers of the offshore zone.
+These values were summarised as monthly averages into period-specific climatological annual cycles of data for decadal periods for all combinations of SSPs and forcings.
+
+### Monthly averaged temperatures for each water column layer: {.unnumbered}
+
+Derived by monthly averaging values at grid points within the inshore and vertical layers of the offshore zones from the NEMO-ERSEM coupled hydro-geochemical model output, weighted by grid point volumes.
+Values were summarised into period-specific climatological annual cycles of data.
+
+### Monthly averaged suspended particulate matter (SPM) concentrations (mg.m^-3^) in the shallow zone and the deep zone upper layer: {.unnumbered}
+
+Monthly averaged values of inorganic suspended particulate matter in sea water are available from the Globcolour project, starting from September 1997.
+These data are derived from satellite observations using the algorithm of Gohin [-@gohin2011].
+Data were downloaded from the ftp server (<ftp://ftp.hermes.acri.fr/GLOB/merged/month/>).
+We summarised these values as zonal statistics for the model domain to acquire a climatological annual cycle of data for the 2010-2019 simulation period only.
+
+### Monthly average light attenuation coefficients for the inshore and offshore surface layers: {.unnumbered}
+
+Light attenuation in open water was parameterised from a linear relationship between the light attenuation coefficient and suspended particulate matter concentration (SPM) (Devlin et al., 2008).
+
+### Monthly averaged daily integrated irradiance at the sea surface (E.m^-2^.d^-1^): {.unnumbered}
+
+Derived from HadGEM2-ES model output [@jones2011] which forces the NEMO-ERSEM model run used throughout our implementation.
+Monthly mean values were summarised into climatological annual cycles of data for decadal periods and NEMO-ERSEM ensembles.
+
+### Monthly averaged daily atmospheric deposition rates of oxidised and reduced nitrogen onto the sea surface in the shallow and deep zones (mMN.m^-2^.d^-1^): {.unnumbered}
+
+Sourced from the "histsoc" files for a 1901 - 2021 hindcast as monthly averages [@yang2022], available from [CDS](https://cds.climate.copernicus.eu/cdsapp#!/dataset/10.24381/cds.f17050d7?tab=overview).
+Monthly values were summarised into climatological annual cycles of monthly oxidised and reduced nitrogen deposition rates extracted for 2010-2019.
+ISIMIPb Projections for SSP126 and SSP370 were processed in the same way for decadal periods up to and including the 2060s.
+
+### Monthly averaged, freshwater river inflow rates (expressed as a daily proportion of the receiving layer volume), and concentrations of oxidised and reduced dissolved inorganic nitrogen in the inflowing river waters (mMN.m^-3^): {.unnumbered}
+
+Freshwater inflow derived from HadGEM2-ES model output [@jones2011] which forces the NEMO-ERSEM model run used throughout our implementation.
+Monthly values were summaries into a climatological annual cycle of data for both the 2010-2019 and 2040-2049 periods.
+
+### Volume fluxes into the model domain across open sea boundaries, and from the upper layer of the offshore/deep zone into the inshore/shallow zone, expressed as proportions of the receiving layer volume per day: {.unnumbered}
+
+Monthly averaged daily inflow and outflow volume fluxes derived by integrating daily mean velocities directed perpendicular to transects along the model domain boundary at grid points in each depth layer along transects through outputs from the NEMO-ERSEM coupled hydro-geochemical model output.
+Monthly averaged daily inflow volume fluxes then divided by the volume of the receiving layer in the model domain to estimate a daily flushing rate.
+
+### Mean concentrations of nitrate, ammonia, phytoplankton and suspended detritus (mMN.m^-3^), in adjacent ocean waters inflowing to the offshore/deep zone upper layer, adjacent ocean waters inflowing to the offshore/deep zone lower layer, and adjacent shelf waters inflowing to the inshore/shallow zone: {.unnumbered}
+
+NEMO-ERSEM outputs included nitrate, ammonia, phytoplankton and suspended detritus.
+We calculated the depth-averaged concentrations for pixels within the shallow and deep layers of StrathE2E.
+We then sampled the pixels using the same transects around the model domain as for sampling volume fluxes.
+Only transects where water flowed into the model domain were sampled, and the average concentration of inflowing waters for target variables was calculated weighting by the flow rate across a transect and the cross-sectional area represented by a transect (average depth and length).
+Concentrations were then averaged into climatological annual cycles.
+The flow weighted averaging of concnetrations was calculated on the 5-day NEMO-ERSEM timestep, before averaging to a monthly climatology of concentrations.
+
+# Fishing fleet {.unnumbered}
+
+## Background {.unnumbered}
+
+The key configuration data for the fishing fleet model are the definitions of the gears in terms of their power with respect to each of the harvestable resource guilds, discarding rates, processing-at-sea rates, and their seabed abrasion rates.
+These can be regarded as static parameters for each gear.
+
+An additional class of static parameters is the scaling coefficients between effort (activity x power) and the harvest ratio generated on each model resource guild.
+These parameters have to be derived by fitting.
+
+Finally, there are parameters which we can consider as driving data since they would be expected to vary with time.
+These are the activity rates of each gear, and their spatial distributions across the habitat types.
+
+Our principal data sources for the fishing catch data were obtained from Seas Around Us (SAU) [@white2020].
+Seas Around Us data that matches closest to the model implementation domain is provided under the EEZ label "South Africa Atlantic and Cape".
+The area this fisheries data covers encompasses the intersection between the South Africa EEZ and the FAO fishing zone 47.
+This area is larger than the model implementation domain.
+To obtain estimated catch for the model domain area, we calculated the proportion of spatial effort occurring within the SAU South Africa Atlantic and Cape region that occurs within the model domain.
+This gives us a unique scaling for each gear type that is then applied to all raw catch values from SAU.
+For all gear types these proportion scales are calculated from SANBI data layers, as used to calculate the spatial distribution of fishing activity across the habitat types (WCRL landings are assumed to be obtained from within the model domain as this is the dominant habitat/range of the species [@dffe2023]).
+
+## Regional activity rates, of each gear type {.unnumbered}
+
+Annual regional activity rates for each gear type were determined primarily through literature, with the Global Fishing Watch database being used in the absence of literature estimates for the purse-seine fleet.
+Activity levels in seconds are collated for each gear type and converted to s/m\^2/d by dividing values by the model domain area and 360 (the number of days per year represented in StrathE2E).
+The details of activity estimation for each gear type are as follows:
+
+### Midwater trawl {.unnumbered}
+
+Midwater trawl effort is estimated from Reed et al. @reed2017.
+Values are provided for the number of trawls occurring annually and the proportion and duration of trawls occurring at day and night.
+These values are then converted to seconds and scaled by the proportion of total midwater trawl activity occurring within the domain (using spatial data provided by SANBI @sanbi2019).
+
+### Nets including small scale {.unnumbered}
+
+Net effort is estimated for beach-seine and gillnet gears and combined, small scale net activity data is not available.
+Activity values for the Western Cape are obtained from Hutchings et al. @hutchings2010 as gillnet fishing days and beach-seine hauls per year.
+We assume that 1 beach seine haul is performed per day to estimate the number of beach-seine fishing days.
+We assume that fishers fish for half of these days (12h per day) and convert the activity to seconds.
+
+### Pole and line {.unnumbered}
+
+Pole and line activity data is obtained from @west2024 as the number of vessels with active rights in South Africa for the 2019-2023 period.
+The average duration of a fishing trip by this fleet is 14 days [@west2024].
+We assume that boats spend 2 weeks at sea and then 2 weeks on land, resulting in 182 days of fishing per year.
+We assume that boats spend 12h per day fishing and convert the activity to seconds.
+The activity is then scaled by the proportion of 'tuna pole' activity occurring within the domain (spatial data provided by [@sanbi2019]).
+
+### Squid jig {.unnumbered}
+
+Squid jig activity is obtained from @cochrane2014 as the total number of man-hours occurring in South Africa per year.
+We convert this to vessel-hours assuming that the average number of crew per vessel is 21 [@cochrane2014] and convert vessel hours to seconds.
+The activity is then scaled by the proportion of squid jig activity occurring within the domain (spatial data provided by @sanbi2019).
+
+### Longline {.unnumbered}
+
+Longline activity levels are estimated separately for pelagic and demersal longline fleets and then combined.
+
+Pelagic longline activity values are obtained from Parker et al. @parker2021 as the number of boats in South Africa over the 2010-2019 period.
+The average trip duration is 14 days, we assume that boats spend 2 weeks at sea and 2 weeks on land, resulting in 182 fishing days per year.
+We assume that 12h of fishing per day is occurring on pelagic longline vessels.
+This activity is then converted to seconds and scaled by the proportion of pelagic longline activity occurring within the domain (spatial data provided by [@sanbi2019]).
+
+Demersal longline activity values are obtained from [@bergh2022] as the number of sets used in the fleet annually.
+We assume the average number of hooks per set is 14,000 [@nyengera2019] and the number of hooks used per day is 14,995, calculating the total number of demersal longline fishing days per year in the fleet.
+Demersal longline setting generally begins at 2am with hauling occurring until 8pm (18h fishing time per day) [@nyengera2019].
+The activity is then converted to seconds and scaled by the proportion of activity occurring within the domain (spatial data for 'hake longline' provided by [@sanbi2019]).
+
+### Purse seine {.unnumbered}
+
+Due to a lack of literature sources for purse seine activity levels Global Fishing Watch data is used to estimate annual activity in the domain in hours.
+
+### Demersal trawl {.unnumbered}
+
+The number of trawling hours by the demersal trawl fleet in South Africa are obtained from [@barrybaker2007].
+Values available cover the 1996-2004 period but values from 1996-1999 are substantially higher than values from 2000-2004, thus we take values from 2000-2004.
+The mean annual activity level is then converted to seconds and scaled by the proportion of demersal inshore and offshore trawling occurring within the domain (spatial data provided by SANBI @sanbi2019).
+
+### West Coast Rock Lobster Traps {.unnumbered}
+
+The number of commercial (offshore) trapping trips conducted by the West Coast Rock Lobster trap fishery (2016-2019) were obtained from [@eggers2021].
+We assume the trips last around 2 days [@safe2020] and traps are in the water for 75% of the trip duration (18h/day).
+The activity level is then converted to seconds.
+We assume that the West Coast Rock Lobster trapping fleet operates exclusively within the model implementation domain.
+
+### Recreational fishing gear {.unnumbered}
+
+The number of recreational fishers in the Western Cape region is estimated from [@pots2021], with fishing occuring an average of 48 days per year.
+We assume that recreational fishing trips last 5h and convert the activity to seconds.
+
+### Small scale lines {.unnumbered}
+
+The number of small scale fishers operating in South Africa is obtained from [@dffe2023], with 85% of fishers targetting linefish (small scale lines).
+We assume that small scale line fishers fish 5 days per week, removing a month of the year due to inclement conditions (230 days/year).
+We assume that fishers spend 12h per day fishing.
+Activity is then converted to seconds and scaled by the proportion of linefishing effort occurring within the model domain area.
+
+### Subsistence fishing gear {.unnumbered}
+
+The number of subsistence fishers fishing in the model domain is estimated in [@clark2002].
+Subsistence fishing is estimated to occur 219 days per year [@ermgassen2020].
+Fisher testimony conveys fishing starting from 4am [@icsf2023], we assume that the average fishing duration is 12h/day.
+Activity is then converted to seconds.
+
+## Spatial proportional distribution of activity by each gear {.unnumbered}
+
+For all fishing fleets, the proportion of fishing gear activity over the habitat domain is calculated as the proportion of the target gear's activity that occurs within each habitat/shore type.
+E.g. if 1h of trawling occurs in the inshore rocky habitat type and the total amount of activity occurring in the domain is 10h then the inshore rocky habitat type will have a proportion of 0.1.
+This produces a gear-type x habitat matrix, with rows for each gear-type summing to 1.
+Proportion calculations were primarily performed using spatial activity data in raster formats and habitat domain data in vector formats.
+
+Where data are obtained from SANBI, the data have been created to contribute to cumulative marine pressure mapping for the 2018 National Biodiversity Assessment by Stephen Holness [@holness2018].
+These data were created from various sources of spatial fishing activity and catch, and have been manipulated to remove outlier values (e.g. removing values above the 90% percentile).
+As some layers are derived from spatial catch density, these layers may not fully represent the extent of fleet activity.
+These layers are not considered to be accurrate, but rather a best guess at the distribution of fishing activity across South African waters.
+It is acknowledged that mapping of small scale and subsistence fishing is preliminary and, "according to many stakeholders incomplete" (pers comms Fairweather @fairweather2025).
+Data were obtained from [@sanbi2019] and [@holness2018].
+
+The sources and processing for each gear type are described below:
+
+-   `midwater trawl` : Midwater trawl spatial pressure data were obtained from SANBI [@sanbi2019].
+    These data are derived from values of hours of trawling.
+
+-   `nets including small scale` : Gillnet and Beach-seine spatial pressure data from SANBI [@sanbi2019] were combined.
+    These data are derived from numbers of fishing rights allocated / km\^2.
+
+-   `pole and line` : Pole and line spatial pressure data (labelled 'Tuna Pole') were obtained from SANBI [@sanbi2019].
+    These data are derived from catch in kg / km\^2.
+
+-   `squid jig` : Squid jig spatial pressure data were obtained from SANBI [@sanbi2019].
+    These data are derived from values of catch in kg / km\^2.
+
+-   `longline` : Pelagic and demersal (labelled 'Hake Longline') longline data were obtained from SANBI [@sanbi2019] and combined additively.
+    Demersal longline data are derived from catch in kg / km\^2 and pelagic longline data are derived from effort in hooks / km\^2.
+
+-   `purse seine` : Purse seine data (labelled 'Small Pelagic Fishery') were obtained from SANBI [@sanbi2019].
+    It was confirmed that the spatial distribution of SANBI small pelagic fishery data and Global Fishing Watch data [@globalfishingwatch2025] (used for annual activity estimates) matched closely.
+    SANBI spatial data are derived from catch in kg / km\^2.
+
+-   `demersal trawl` : Demersal (inshore and offshore) trawl data were obtained from SANBI [@sanbi2019].
+    Data are derived from effort in hours of trawling.
+
+-   `West Coast Rock Lobster traps` : Commercial West Coast Rock Lobster traps are used in rocky habitats at depths greater than 100m [@dffe2023].
+    We distribute West Coast Rock Lobster trap activity uniformly over rocky habitat regions at depths \> 100m before calculating the proportion of this activity between inshore and offshore rocky habitat zones.
+
+-   `recreational fishing gear` : Linefishery and shore-based recreational fishing gear spatial pressure data from SANBI [@sanbi2019] were combined.
+    The linefishery data layer from SANBI approximately represents recreational boat-based fishing activity [@sanbi2019].
+    Linefish spatial pressure data were derived from values in catch kg / km\^2, while shore-based recreational fishing spatial pressure data were derived from values in density of fishers / km\^2.
+
+-   `small scale lines` : The 'Linefishery' spatial activity data layer from SANBI [@sanbi2019] was assumed to represent the spatial effort distribution for the small scale line fleet.
+    This data layer was derived from catch values in kg / km\^2.
+
+-   `subsistence fishing gear` : Subsistence fishing gear data (labelled 'Subsistence Harvest') were obtained from SANBI [@sanbi2019].
+    This data layer is derived from values of fishermen / km\^2.
+
+## Catching power and discard rates of each resource guild by each gear: {.unnumbered}
+
+Due to a lack of publically available official fisheries data and time constraints, Seas Around Us catch data are used to calculate fishing fleet input data for the implementation.
+
+Seas Around Us data were compared to available visualisations and data on species catch from the 2023 Status of Marine Living Resources report from the South Africa Department of Forestry, Fisheries and the Environment [@dffe2023].
+Seas Around Us data were found to generally represent these catch data closely where available.
+However, it is acknowledged that Seas Around Us data likely diverges from official data to a greater degree for the species/sectors that are not included in the 2023 report.
+Seas Around Us include qualitative uncertainty scores for each catch data entry.
+The scores present in the Seas Around Us data used include NA (unknown/unassessed uncertainty), 1 (+/- 50%, low agreement and low evidence) and 2 (+/- 30%, high agreement and limited evidence, or medium agreement and medium evidence, or low agreement and robust evidence).
+Most data for this region have a score of 1, with little variation during the 2010-2019 period.
+It is noted that catch reconstruction for the South Africa region was developed for the 1950-2010 period, and then was subsequently updated for years post-2010 [@white2020].
+
+Species in Seas Around Us data that were previously not accounted for in StrathE2E guilds were allocated to guilds based on diet composition and movement information from FishBase.
+Yellowtail Kingfish (*Seriola lalandi*), previously allocated to planktivorous fish, was allocated to Demersal fish due to it's predatory ecology and classification in EwE from Shannon et al. @shannon2020.
+
+Gear types in Seas Around Us data were matched to the chosen fleets for the StrathE2E model implementation as follows:
+
+-   `midwater trawl` =\> 'pelagic trawl'
+-   `nets including small scale` =\> 'bagnets', 'cast nets', 'small scale gillnets', 'small scale encircling nets', 'small scale seine nets', 'small scale other nets', 'gillnets'
+-   `pole and line` =\> 'pole and line'
+-   `longline` =\> 'longline'
+-   `demersal trawl` =\> 'bottom trawl'
+-   `recreational fishing gear` =\> 'recreational fishing gear'
+-   `small scale lines` =\> 'small scale lines', 'hand lines'
+-   `subsistence fishing gear` =\> 'subsistence fishing gear'
+-   `squid jig` =\> The squid jig fishing fleet was added by taking squid catch from the 'small scale lines' gear type and renaming the gear to 'squid jig'. It is assumed that these catches were obtained by fishers using squid jigs and were collated with other small scale lines fishing methods by Seas Around Us, and should be separated into a separate gear type as squid jigs have high species selectivity compared to other small scale lines using hooks.
+-   `West Coast Rock Lobster traps` =\> West Coast Rock Lobsters (*Jasus lalandii*) are primarily caught by 'unknown class' in Seas Around Us data. It was assumed that this proportion of the *J lalandii* catch was taken by commercial fishers using traps as *J lalandii* are also caught, in lower levels, by the nets gear type, which likely represents the nearshore netfishery for West Coast Rock Lobster. These 'unknown class' catch for *J lalandii* were relabeled as `West Coast Rock Lobster traps` gear type. There is low evidence for bycatch in this fishery [@dffe2023], so only *J lalandii* catch were attributed to this gear type.
+
+### Bycatch of birds {.unnumbered}
+
+#### Longlines {.unnumbered}
+
+The numbers of birds caught and examined at port from the pelagic longline fishery [@rollinson2017] and demersal longline fishery [@petersen2009] were used to calculate bycatch weights for birds by the longline fishing gear type.
+In the longline fishery in South Africa, permits state that any deceased birds must be returned to port for examination, these values were therefore attributed as landings.
+Petersen et al. @petersen2009 suggest that 40% of birds caught in the longline fishery are not returned to port due to operational reasons.
+Therefore 40% of the total seabird-longline bycatch weight was attributed to seabird-longline discards.
+
+#### Demersal trawl {.unnumbered}
+
+Watkins @watkins2008 present numbers of birds killed in the demersal trawl fishery.
+It is assumed that these birds are most often killed during waste dumping and are not returned to port, and therefore have been attributed to the fishery as discards [@watkins2008].
+
+### Final processing {.unnumbered}
+
+1.  Landings and discards are scaled by the proportion of gear type activity occuring within the SAU region that occurs within the model domain.
+
+2.  Landings and discards for each guild, gear type and year are summed and then averaged across 2010-2019 to obtain annual average catch in tonnes.
+
+3.  Additional bycatch of birds from literature sources are added to guild \* gear type data.
+
+4.  Discard rates (only present for demersal fish x demersal trawl) are calculated as the proportion of annual average discards from annual average catch.
+
+5.  Units for catch are converted to g/m\^2/day by dividing by 1,000,000, the domain area and 360 (number of days represented in StrathE2E).
+
+6.  Power is calculated as catch divided by the activity of each gear type (in s/m\^2/day).
+
+7.  Guild values are converted to nitrogen units per gram of wet weight.
+
+# Target data {.unnumbered}
+
+Target data is used for optimisation in the fitting of parameters.
+
+## Biological target data {.unnumbered}
+
+Biological target data for the region such as production measures, diet composition and Production/Biomass ratios were provided by Lynne Shannon and Kelly Ortega-Cisneros [@shannon2020].
+
+| StrathE2E Guild | EwE functional group |
+|----|----|
+| Suspended detritus | Detritus |
+| Macrophytes | Benthic producers |
+| Phytoplankton | Phytoplankton 1, Phytoplankton 2 |
+| Omnivorous zooplankton | Microzooplankton, Mesozooplankton, Macrozooplankton |
+| Carnivorous zooplankton | Gelatinous zooplankton, Chokka Squid |
+| Planktivorous fish | Anchovy recruits/spawners, Sardine juveniles/adults, Redeye, Other small pelagics, juvenile Horse Mackerel, Chub Mackerel, Lanternfish, Lightfish |
+| Migratory fish | Tuna and swordfish |
+| Demersal fish | adult Horse Mackerel, Large Sparids, Medium Sparids, Sciaenids, Yellowtail Kingfish, other linefish, small Merluccius spp., large Merluccius spp., pelagic feeding demersal fish, benthic feeding demersal fish, Agulhas Sole, pelagic feeding Chondrichthyans, benthic feeding Chondrichthyans, Apex Chondrichthyans, Mullet, Snoek |
+| Pinnipeds | Seals |
+| Cetaceans | Cetaceans |
+| Birds | African Penguin, Cape Gannet, Cape Cormorant, other Seabirds |
+| Suspension/deposit feeding benthos | Macrobenthos |
+| Carnivorous/scavenge feeding benthos | West Coast Rock Lobster, South Coast Rock Lobster, Meiobenthos |
+
+: Functional group - StrathE2E guild allocations used to match species groups from [-@shannon2020] with guilds in StrathE2E for the purpose of calculating biological target data values.
+
+These data are derived from an Ecopath with Ecosim model of the Southern Benguela region according to the following methodologies:
+
+### Annual total primary production {.unnumbered}
+
+Estimated from [@shannon2020] using observations from [@brown1991] and revised to account for particulate dissolved organic carbon.
+
+### Gross guild production and P/B ratios {.unnumbered}
+
+Guild biomass were estimated from biomass and abundance estimates from acoustic and demersal surveys from the Department of Environment, Forestry and Fisheries for planktivorous and demersal fish and chokka squid.
+Biomass for the groups allocated to the omnivorous/carnivorous zooplankton and benthos guilds were estimated during balancing of the revised Southern Benguela Ecopath model [@shannon2020].
+
+Production values were derived from observations (e.g., [@painting1992]; [@hutchings1991]) and other modelling studies (e.g., [@jarre-teichman1998]) for both zooplankton groups.
+For benthos groups, production estimates were derived from other modelling studies and observations ([@berry1980] for West Coast Rock Lobster).
+Similarly, for planktivorous and demersal groups, production estimates were derived from observational and modelling studies.
+Please see Appendix A in Shannon et al. @shannon2003 and Supplementary Material from Shannon et al. @shannon2020 for a complete list of references and assumptions associated with these estimates.
+
+### Net production and P/B ratios {.unnumbered}
+
+Estimated using biomass estimates derived from Shannon et al. [-@shannon2020] for cetaceans, and from observations for seals and seabirds (e.g. [@kirkman2007]; [@crawford1991]; [@crawford2007]).
+Production estimates from Crawford et al. [-@crawford1991], Shannon et al. [-@shannon2003; -@shannon2020].
+
+### Annual consumption rates {.unnumbered}
+
+Annual consumption rates were estimated for consumption of planktivorous fish by fish, demersal fish by fish, omnivorous zooplankton by fish and fish larvae, omnivorous zooplankton by carnivorus zooplankton, benthos by fish, birds, pinnipeds and cetaceans.
+
+These were generated using consumption estimates from observational and modelling studies as well as expert knowledge.
+See Appendix A in Shannon et al. @shannon2003 and Supplementary Material from Shannon et al. @shannon2020 for a detailed of references and assumptions associated with these estimates.
+
+### Diet proportions {.unnumbered}
+
+Diet proportion values were estimated for proportion of planktivorous fish in diet of birds, demersal fish in diet of birds, planktivorous fish in diet of pinnipeds, demersal fish in diet of pinnipeds, planktivorous fish in diet of cetaceans and demersal fish in diet of cetaceans.
+
+Diet proportions were mostly generated using observational studies for the southern Benguela.
+A comprehensive list of dietary data for the southern Benguela model can be found in Table A.10 of Shannon et al. @shannon2003.
+Diet data sources were revised in Shannon et al. @shannon2020 to account for the higher taxonomic resolution of several functional groups compared to previous versions of the model.
+See section 4 of the supplementary material of Shannon et al. @shannon2020 for a list of updated references.
+
+### Fisheries data {.unnumbered}
+
+Annual fisheries data such as landings of planktivorous fish, demersal fish, migratory fish, benthos, carnivorous zooplankton and macrophytes and bycatch data for birds, seals and cetaceans were estimated from Seas Around Us data from 2010 to 2019.
+
+## Physical target data {.unnumbered}
+
+### Seasonal nutrient concentrations {.unnumbered}
+
+Season allocations: seasonal nutrient concentrations were calculated using Nov-Feb as 'winter' months and May-Aug as 'summer' months to match the Northern Hemisphere development of StrathE2E, despite South Africa's austral seasons.
+
+Seasonal averaged nitrate concentrations were calculated from World Ocean Atlas 2023 data.
+Monthly data were obtained from [World Ocean Atlas](https://www.ncei.noaa.gov/products/world-ocean-atlas).
+For the shallow water volume all 1° cells touching the domain containing valid data were extracted from depths between 0 and `r SDepth`.
+For the deep water volume all cells touching the offshore domain were extracted from depths between `r SDepth` and `r DDepth`.
+The volumes of the water layers were calculated as the polygon area multiplied by the average depth of the area from mean sea level.
+
+# Model fitting {.unnumbered}
+
+The model fitting or calibration process tunes model parameters to ensure baseline model results better represent observed data for the region.
+This process uses simulated annealing and the predicted likelihood of the observational (target) data to tune parameter values.
+This is conducted using 2010-2015 environmental driving data.
+The model fitting process is conducted for both CNRM-CM6-1-HR and GFDL-ESM4 driving data sets separately to reflect different model baseline conditions, creating a 'CNRM' and 'GFDL' model.
+The process is first conducted for CNRM driving data and the fitted parameters are then used as a baseline for the fitting of the GFDL model parameters.
+Shared Socio-economic Pathway 3-7.0 driving data are used for model fitting to represent emission/climate change trends experienced prior to 2015.
+
+## CNRM {.unnumbered}
+
+To begin fitting the ecology component of the StrathE2E model to the target data, we first disabled guild landing and bycatch data and launched a round of simulated annealing (`e2e_optimise_eco()`).
+The baseline parameter values for this initial fitting round were taken from the SENEGAL_MA StrathE2E model.
+Target data that were used for this round of fitting included primary and guild production estimates, as well as P:B ratios and nitrate concentrations from World Ocean Atlas.
+Fishing target data were excluded from the initial fitting process to allow ecological parameters to stabilise before fitting the fishing model.
+
+Suspension feeding benthos uptake rates and bird uptake and density dependent mortality rates were increased manually, along with adjustments to benthos guild production target values.
+Manual adjustments, along with the broader fitting process, can be found in [Jack-H-Laverick/MA.SouthAfrica](https://github.com/Jack-H-Laverick/MA.SouthAfrica).
+Following manual adjustments, a model likelihood of 0.3 was reached.
+The manually adjusted files were used to fit the ecology model uptake rate parameters by decreasing the CV of other parameter groups before simulated annealing.
+To fit the fishing component of the model, the model with updated uptake parameters was launched with e2e_optimise_fishing().
+Model likelihood reached 0.59, however guild yield curves for Planktivorous fish and Demersal fish suggested these guilds were being underfished with F/Fmsy \<\< 1.
+
+Fisheries data from Sea Around Us indicated that 2010-2019 landings were around 3.6 mMNpergWW per year, and indications of F/Fmsy from the Department of Forestry, Fisheries and the Environment [@dffe2012; @dffe2014; @dffe2016; @dffe2020] suggested that key Planktivorous fish species were being fished at an optimal level (F/Fmsy \~ 1) during this period.
+Additionally, Planktivorous fish are known to experience high temporal variability, with a large spike in biomass from 1995-2008 [@coetzee2022].
+As a result, we hypothesised that Planktivorous Fish Production and P:B parameter estimates from EwE [@shannon2020] may not suitably represent the 2010-2019 time period used for our model, as the EwE model was parameterised for the 1975-2015 time period.
+Incorrect target data time periods may lead to Production and P:B ratios that are not consistent with Planktivorous Fish F/Fmsy and landings estimates for the 2010-2019 period.
+Under this assumption, Planktivorous Fish annual Production and P:B ratio estimates in the target data were disabled for subsequent fitting rounds.
+
+For subsequent fitting, the following process was first applied to Planktivorous fish and then to Demersal fish.
+This process includes a gridded evaluation of maximum nitrogen uptake rates, density dependent mortality rates, and harvest ratio scaling factor values.
+These parameters are used to adjust the guild landings and yield curve so that model landings and F/Fmsy represent target/literature values.
+
+To ensure Planktivorous fish yield curves were representative of target landings and F/Fmsy estimates, we performed several rounds of parameter searches based on the updated model, adjusting maxmimum nitrogen uptake and density dependent mortality rates for Planktivorous Fish, as well as adjusting Harvest Ratio scaling parameters.
+Once suitable Planktivorous Fish landings and yield curve were suitable according to the identified targets, parameters were tuned for Demersal Fish to acheive a F/Fmsy around 1.
+
+As with Demersal Fish event timing parameterisation, we assume Cape Hakes are a representative species for the guild, and acknowledge that Demersal Fish likely occupy a range of F/Fmsy levels.
+For example, the Department of Forestry, Fisheries and the Environment [@dffe2012; @dffe2014; @dffe2016; @dffe2020] assess many shark species to be fished at F \> Fmsy, while Agulhas Sole are assessed to have F \< Fmsy.
+After tuning Demersal Fish parameters, maximum uptake rates for birds, seals and cetaceans were increased by 7, 5 and 3x respectively to prevent guild extinction.
+
+A round of simulated annealing was used to readjust ecological parameters, with standard deviations set to 10% of mean measures for landings target values (compared to the 25% used for other values), and Planktivorous Fish Production and P:B ratio target data disabled due to inconsistent modelled and target data time periods.
+The resulting model underrepresented Carnivorous/Scavenging Benthos landings, so an increase of the HR-scale factor of 150x was applied, increasing model likelihood to 0.5.
+Finally, an final round of simulated annealing was used to confirm that model likelihood would not increase beyond the maximum value reached (0.5).
+
+![Model outputs and observed target data values for the CNRM-CM6-1-HR model for the 2010-2015 SSP3-7.0 variant. Final model likelihood is 0.5.](img/CNRM_2010-2015_obs.png)
+
+| StrathE2E Guild    | Species    |
+|--------------------|------------|
+| Planktivorous Fish | Sardine    |
+| Planktivorous Fish | Herring    |
+| Planktivorous Fish | Anchovy    |
+| Demersal Fish      | Cape Hakes |
+
+: Representative species for Planktivorous and Demersal Fish and their indicative F/Fmsy levels [@dffe2012; @dffe2014; @dffe2016; @dffe2020].
+
+## GFDL {.unnumbered}
+
+For GFDL-ESM4 model fitting, the initial conditions and parameters from the final fitting round of CNRM were used.
+A single round of simulated annealing was used to adjust the ecological parameters from the CNRM baseline to the GFDL environmental forcing data.
+
+![Model outputs and observed target data values for the GFDL-ESM4 model for the 2010-2015 SP3-7.0 variant. Final model likelihood is 0.51.](img/GFDL_2010-2015_obs.png)
+
+# End {.unnumbered}
+
+## Acknowledgements {.unnumbered}
+
+Financial support for the development of the Southern Benguela implementation of StrathE2E2 came from the European Union's Horizon 2020 research and innovation programme (Mission Atlantic).
+We are grateful to: Yuri Artioli and the Plymouth Marine Laboratory for providing environmental forcing data for StrathE2E in the form of NEMO-ERSEM model projections.
+
+## References {.unnumbered}
